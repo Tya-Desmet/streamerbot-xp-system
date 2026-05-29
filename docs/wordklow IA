@@ -1,0 +1,974 @@
+# README 2 — Workflow IA & Développement Prompt par Prompt
+
+# Objectif
+
+Ce document explique comment travailler avec une IA dans Visual Studio Code sans casser l’architecture du projet.
+
+Le but est de :
+
+* éviter les hallucinations
+* éviter le code spaghetti
+* conserver une architecture maintenable
+* découper le projet en petites tâches
+
+---
+
+# IMPORTANT
+
+L’IA ne doit JAMAIS générer :
+
+* plusieurs systèmes en même temps
+* des fichiers énormes
+* une architecture improvisée
+* des dépendances circulaires
+
+---
+
+# Workflow recommandé
+
+# Étape 1 — Définir une tâche unique
+
+Toujours travailler sur UNE fonctionnalité.
+
+## Mauvais
+
+```text
+Fais tout le système XP complet.
+```
+
+---
+
+## Bon
+
+```text
+Crée un service C# AddXp qui :
+- charge un utilisateur JSON
+- ajoute de l'XP
+- sauvegarde le fichier
+- retourne le nouveau niveau
+```
+
+---
+
+# Étape 2 — Donner le contexte projet
+
+Toujours rappeler à l’IA :
+
+* architecture
+* conventions
+* stack
+* contraintes
+
+---
+
+# Prompt de base recommandé
+
+```text
+Tu travailles sur un projet Streamer.bot.
+
+Technologies :
+- Streamer.bot
+- C#
+- JSON local
+- OBS overlays HTML/CSS/JS
+
+Contraintes :
+- petits fichiers
+- une responsabilité par fichier
+- architecture modulaire
+- aucune dépendance circulaire
+- code maintenable par IA
+
+Convention :
+- toutes les modifications XP passent par AddXp()
+- maximum 300 lignes par fichier
+
+Ne crée pas de logique inutile.
+```
+
+---
+
+# Étape 3 — Donner un objectif précis
+
+## Exemple correct
+
+```text
+Crée XpService.cs.
+
+Responsabilités :
+- charger un utilisateur JSON
+- ajouter XP
+- sauvegarder utilisateur
+- vérifier level up
+
+Ne pas gérer :
+- overlays
+- rewards
+- OBS
+- leaderboard
+```
+
+---
+
+# Étape 4 — Toujours demander l’arborescence
+
+Avant génération complexe.
+
+## Exemple
+
+```text
+Donne uniquement l’arborescence idéale des fichiers pour ce module.
+```
+
+---
+
+# Étape 5 — Générer petit à petit
+
+## Ordre recommandé
+
+# PHASE 1
+
+## Core XP
+
+1. User model
+2. JSON loader
+3. Save system
+4. AddXp()
+5. Level calculation
+6. Anti-spam
+7. !rank
+
+---
+
+# PHASE 2
+
+## Leaderboard
+
+1. Leaderboard service
+2. Sorting
+3. Top 3 export
+4. Overlay HTML
+5. Overlay animation
+
+---
+
+# PHASE 3
+
+## Profile Cards
+
+1. Card data
+2. Twitch reward
+3. Overlay card
+4. Animation
+
+---
+
+# PHASE 4
+
+## Export Web
+
+1. JSON export
+2. Website template
+3. User profile pages
+4. Responsive leaderboard
+
+---
+
+# Bonnes pratiques IA
+
+# IMPORTANT
+
+Toujours demander :
+
+```text
+Explique les choix techniques avant le code.
+```
+
+---
+
+# IMPORTANT
+
+Toujours demander :
+
+```text
+Ne modifie pas les autres fichiers.
+```
+
+---
+
+# IMPORTANT
+
+Toujours demander :
+
+```text
+Respecte l’architecture existante.
+```
+
+---
+
+# IMPORTANT
+
+Toujours demander :
+
+```text
+Ne crée pas de fonctionnalités non demandées.
+```
+
+---
+
+# Structure idéale des prompts
+
+## Modèle recommandé
+
+```text
+Contexte projet :
+[architecture]
+
+Objectif :
+[tâche précise]
+
+Contraintes :
+[règles]
+
+Sortie attendue :
+[fichiers précis]
+```
+
+---
+
+# Exemple complet de prompt
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Utilise C#, JSON local et architecture modulaire.
+
+Objectif :
+Créer UserRepository.cs.
+
+Responsabilités :
+- charger utilisateur JSON
+- sauvegarder utilisateur JSON
+- créer utilisateur si absent
+
+Contraintes :
+- une responsabilité unique
+- pas plus de 300 lignes
+- pas de logique XP
+- pas de logique OBS
+
+Sortie attendue :
+- UserRepository.cs
+- structure dossiers recommandée
+```
+
+---
+
+# Ce qu’il faut éviter avec IA
+
+## Interdit
+
+```text
+Refactor tout le projet.
+```
+
+---
+
+## Interdit
+
+```text
+Optimise toute l’architecture.
+```
+
+---
+
+## Interdit
+
+```text
+Ajoute plein de fonctionnalités.
+```
+
+---
+
+# Règle d’or
+
+L’IA doit toujours travailler :
+
+```text
+Petit module → testé → validé → commit
+```
+
+Jamais :
+
+```text
+Gros système généré d’un coup
+```
+
+---
+
+# Workflow Git recommandé
+
+## Branches
+
+```text
+feature/xp-system
+feature/leaderboard
+feature/cards
+feature/export-web
+```
+
+---
+
+# Commits
+
+## Petits commits
+
+```text
+Add XP service
+Add leaderboard sorting
+Add anti-spam system
+```
+
+---
+
+# README — Prompt Workflow par Module
+
+# Objectif
+
+Cette section fournit des workflows IA spécialisés par module.
+
+Chaque module doit être développé indépendamment.
+
+IMPORTANT :
+
+* ne jamais développer plusieurs modules à la fois
+* toujours terminer un module avant le suivant
+* toujours tester localement avant intégration
+
+---
+
+# MODULE 1 — CORE USER SYSTEM
+
+# Objectif
+
+Créer le système utilisateur local.
+
+---
+
+# Responsabilités
+
+* création utilisateur
+* chargement JSON
+* sauvegarde JSON
+* structure données utilisateur
+* backups
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/core/users
+   UserModel.cs
+   UserRepository.cs
+   BackupService.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Architecture modulaire.
+JSON local.
+C#.
+
+Objectif :
+Créer UserRepository.cs.
+
+Responsabilités :
+- charger utilisateur JSON
+- sauvegarder utilisateur JSON
+- créer utilisateur si absent
+
+Contraintes :
+- aucune logique XP
+- aucune logique overlay
+- aucune logique OBS
+- maximum 300 lignes
+- architecture maintenable IA
+
+Sortie attendue :
+- UserRepository.cs
+- explication architecture
+```
+
+---
+
+# MODULE 2 — XP SYSTEM
+
+# Objectif
+
+Créer le moteur XP principal.
+
+---
+
+# Responsabilités
+
+* ajouter XP
+* calcul niveau
+* level up
+* anti-spam
+* watchtime XP
+* message XP
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/core/xp
+   XpService.cs
+   LevelService.cs
+   AntiSpamService.cs
+   WatchtimeService.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Architecture modulaire.
+C#.
+JSON local.
+
+Objectif :
+Créer XpService.cs.
+
+Responsabilités :
+- ajouter XP
+- sauvegarder utilisateur
+- détecter level up
+
+Contraintes :
+- ne pas gérer overlays
+- ne pas gérer OBS
+- ne pas gérer leaderboard
+- utiliser AddXp(user, amount, reason)
+- architecture modulaire
+
+Sortie attendue :
+- XpService.cs
+- explication technique
+```
+
+---
+
+# MODULE 3 — COMMAND SYSTEM
+
+# Objectif
+
+Créer les commandes Twitch.
+
+---
+
+# Responsabilités
+
+* !rank
+* !top
+* réponses chat
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/commands
+   RankCommand.cs
+   TopCommand.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Utilise services XP existants.
+
+Objectif :
+Créer RankCommand.cs.
+
+Responsabilités :
+- récupérer niveau
+- récupérer XP
+- récupérer classement
+- formatter message Twitch
+
+Contraintes :
+- ne pas recalculer XP
+- utiliser services existants
+- aucun accès direct JSON
+
+Sortie attendue :
+- RankCommand.cs
+```
+
+---
+
+# MODULE 4 — LEADERBOARD SYSTEM
+
+# Objectif
+
+Créer le système leaderboard.
+
+---
+
+# Responsabilités
+
+* tri utilisateurs
+* top 3
+* export leaderboard
+* refresh leaderboard
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/leaderboard
+   LeaderboardService.cs
+   RankingService.cs
+   LeaderboardExportService.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Architecture modulaire.
+
+Objectif :
+Créer LeaderboardService.cs.
+
+Responsabilités :
+- récupérer utilisateurs
+- trier par XP
+- retourner top classement
+
+Contraintes :
+- aucune logique OBS
+- aucune animation
+- aucune logique Twitch
+- optimisation lecture JSON
+
+Sortie attendue :
+- LeaderboardService.cs
+```
+
+---
+
+# MODULE 5 — OBS OVERLAYS
+
+# Objectif
+
+Créer les overlays OBS.
+
+---
+
+# Responsabilités
+
+* affichage leaderboard
+* affichage top3
+* affichage cards
+* animations
+
+---
+
+# Structure attendue
+
+```text
+/overlays
+   /leaderboard
+   /top3
+   /cards
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Overlay OBS HTML/CSS/JS.
+
+Objectif :
+Créer overlay leaderboard animé.
+
+Responsabilités :
+- afficher top 3
+- podium centré
+- animations fluides
+- lecture JSON local
+
+Contraintes :
+- design responsive
+- animations performantes
+- aucun backend externe
+- compatible OBS Browser Source
+
+Sortie attendue :
+- HTML
+- CSS
+- JavaScript
+```
+
+---
+
+# MODULE 6 — PROFILE CARDS
+
+# Objectif
+
+Créer le système de profile cards.
+
+---
+
+# Responsabilités
+
+* affichage carte viewer
+* reward Twitch
+* animation carte
+* thème carte
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/cards
+   CardService.cs
+   CardRewardHandler.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+
+Objectif :
+Créer CardService.cs.
+
+Responsabilités :
+- générer données carte viewer
+- récupérer stats utilisateur
+- préparer données overlay
+
+Contraintes :
+- aucune logique OBS
+- aucune logique reward Twitch
+- architecture modulaire
+
+Sortie attendue :
+- CardService.cs
+```
+
+---
+
+# MODULE 7 — BACKUP SYSTEM
+
+# Objectif
+
+Créer le système de sauvegarde.
+
+---
+
+# Responsabilités
+
+* backup automatique
+* rotation backups
+* restauration données
+
+---
+
+# Fichiers attendus
+
+```text
+/scripts/backup
+   BackupService.cs
+   RestoreService.cs
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+
+Objectif :
+Créer BackupService.cs.
+
+Responsabilités :
+- sauvegarder dossiers data
+- timestamp backups
+- limiter nombre backups
+
+Contraintes :
+- aucune logique XP
+- aucune logique overlay
+- architecture modulaire
+
+Sortie attendue :
+- BackupService.cs
+```
+
+---
+
+# MODULE 8 — WEB EXPORT MODULE
+
+# Objectif
+
+Créer le module export web optionnel.
+
+---
+
+# Responsabilités
+
+* export leaderboard
+* export profils utilisateurs
+* export statistiques
+
+---
+
+# Structure attendue
+
+```text
+/modules/export-web
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Module export web optionnel.
+
+Objectif :
+Créer WebExportService.cs.
+
+Responsabilités :
+- générer leaderboard.json
+- générer stats.json
+- générer profils utilisateurs
+
+Contraintes :
+- aucun backend cloud
+- aucun accès autres streamers
+- export JSON uniquement
+- architecture modulaire
+
+Sortie attendue :
+- WebExportService.cs
+```
+
+---
+
+# MODULE 9 — WEBSITE TEMPLATE
+
+# Objectif
+
+Créer le template site web.
+
+---
+
+# Responsabilités
+
+* leaderboard public
+* profils viewers
+* responsive design
+* lecture exports JSON
+
+---
+
+# Structure attendue
+
+```text
+/website
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+Site web statique.
+
+Objectif :
+Créer page leaderboard responsive.
+
+Responsabilités :
+- afficher classement
+- afficher niveaux
+- afficher profils viewers
+- lecture fichiers JSON exportés
+
+Contraintes :
+- Next.js
+- TailwindCSS
+- responsive
+- aucune base de données
+
+Sortie attendue :
+- structure projet
+- composants React
+- styles Tailwind
+```
+
+---
+
+# MODULE 10 — THEMES SYSTEM
+
+# Objectif
+
+Créer le système de thèmes.
+
+---
+
+# Responsabilités
+
+* thèmes overlays
+* thèmes cards
+* thèmes leaderboard
+
+---
+
+# Structure attendue
+
+```text
+/themes
+   /default
+   /pixel
+   /cyberpunk
+```
+
+---
+
+# Prompt IA recommandé
+
+```text
+Contexte projet :
+Projet Streamer.bot XP System.
+
+Objectif :
+Créer architecture système thèmes.
+
+Responsabilités :
+- chargement thème
+- variables couleurs
+- styles overlays
+- styles cards
+
+Contraintes :
+- thèmes interchangeables
+- aucun hardcode couleurs
+- architecture maintenable
+
+Sortie attendue :
+- architecture dossiers
+- système chargement thèmes
+- exemples configuration
+```
+
+---
+
+# Workflow final recommandé
+
+## Étape 1
+
+Créer architecture dossiers.
+
+---
+
+## Étape 2
+
+Créer système utilisateurs.
+
+---
+
+## Étape 3
+
+Créer système XP.
+
+---
+
+## Étape 4
+
+Créer commandes Twitch.
+
+---
+
+## Étape 5
+
+Créer leaderboard.
+
+---
+
+## Étape 6
+
+Créer overlays OBS.
+
+---
+
+## Étape 7
+
+Créer cards.
+
+---
+
+## Étape 8
+
+Créer backups.
+
+---
+
+## Étape 9
+
+Créer export web.
+
+---
+
+## Étape 10
+
+Créer thèmes.
+
+---
+
+# Objectif final
+
+Construire un système :
+
+* maintenable
+* modulaire
+* propre
+* performant
+* extensible
+* compatible IA
+* simple pour streamers débutants.
