@@ -1,0 +1,250 @@
+/* ============================================================
+   card.css — Streamer.bot XP System
+   Barre XP : transform scaleX() — zéro layout reflow
+   Animations : transform + opacity uniquement (GPU compositing)
+   ============================================================ */
+
+/* ===== VARIABLES STRUCTURELLES ===== */
+/* Variables visuelles (couleurs, fonts) : voir themes/default/ et themes/rpg/ */
+:root {
+  /* Timings animations — invariants quel que soit le thème */
+  --dur-in:      0.48s;
+  --dur-out:     0.36s;
+  --dur-bar:     0.95s;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.48, 0.64, 1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  display: flex;
+  /* Positionnement bas-gauche par défaut — ajustable dans OBS */
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 24px;
+}
+
+/* ===== CARD ===== */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px 14px 14px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  /* Bordure gauche accent — identité visuelle principale */
+  border-left: 3px solid var(--accent);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.55),
+    -3px 0 22px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  min-width: 300px;
+  max-width: 420px;
+  width: 100%;
+  /* Compositing layer pour l'animation d'entrée/sortie */
+  will-change: transform, opacity;
+}
+
+/* État initial — la card est invisible et décalée */
+.card.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-30px);
+}
+
+/* ===== COLONNE AVATAR ===== */
+.col-avatar {
+  flex-shrink: 0;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+  /* Fallback couleur si pas d'avatar */
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+}
+
+/* Badge rang — positionné en dehors du cercle en bas-droite */
+.rank-tag {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-title);
+  font-size: 0.55rem;
+  font-weight: 700;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== COLONNE INFO ===== */
+.col-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.username {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== LIGNE NIVEAU ===== */
+.row-level {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.level-label {
+  font-family: var(--font-title);
+  font-size: 0.5rem;
+  color: var(--text-sub);
+  letter-spacing: 0.12em;
+}
+
+.level-value {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--accent);
+  /* Glow léger sur le chiffre niveau */
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ===== BARRE XP ===== */
+/* Technique : scaleX() sur l'enfant — zéro reflow, pur GPU */
+.xp-track {
+  position: relative;
+  height: 6px;
+  background: var(--bar-track);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  position: absolute;
+  inset: 0;
+  /* Gradient pour donner de la profondeur */
+  background: linear-gradient(90deg, var(--accent) 0%, var(--bar-shine) 60%, var(--accent) 100%);
+  border-radius: inherit;
+  /* Ancrage gauche : scaleX part de 0 vers la droite */
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform var(--dur-bar) var(--ease-spring);
+  will-change: transform;
+}
+
+/* Reflet animé sur la barre (shimmer) */
+.xp-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(280%); }
+}
+
+/* ===== LIGNE XP TEXTE ===== */
+.row-xp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.xp-current {
+  font-family: var(--font-title);
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.04em;
+}
+
+.xp-arrow {
+  font-size: 0.5rem;
+  color: var(--text-sub);
+}
+
+.xp-next {
+  font-family: var(--font-title);
+  font-size: 0.52rem;
+  color: var(--text-sub);
+}
+
+/* ===== ANIMATION ENTRÉE ===== */
+/* translateX + opacity : compositing GPU uniquement */
+@keyframes cardIn {
+  from {
+    transform: translateX(-34px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ===== ANIMATION SORTIE ===== */
+@keyframes cardOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+}
+
+/* Classes appliquées / retirées par JS */
+.card.entering {
+  animation: cardIn var(--dur-in) var(--ease-out) forwards;
+}
+
+.card.leaving {
+  animation: cardOut var(--dur-out) ease-in forwards;
+}

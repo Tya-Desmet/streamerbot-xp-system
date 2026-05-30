@@ -1,0 +1,56 @@
+/* ============================================================
+   Card Thème CYBER — Cyberpunk Neon
+   Style : cyan électrique, sombre, futuriste, glitch
+   Activer : window.setTheme('cyber') | ?theme=cyber
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --accent:      #00ffff;
+  --accent-dim:  rgba(0, 255, 255, 0.18);
+  --accent-glow: rgba(0, 255, 255, 0.52);
+  --bar-shine:   rgba(0, 255, 255, 0.48);
+
+  --card-bg:   rgba(4, 8, 18, 0.97);
+  --bar-track: rgba(0, 255, 255, 0.10);
+
+  --text-main: #e0ffff;
+  --text-sub:  rgba(0, 255, 255, 0.55);
+
+  --font-title: 'Orbitron', monospace;
+  --font-body:  'Rajdhani', sans-serif;
+}
+
+/* Bordure gauche néon + halo cyan */
+.card {
+  border-left:   3px solid #00ffff !important;
+  border-top:    1px solid rgba(0, 255, 255, 0.14) !important;
+  border-right:  1px solid rgba(0, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  background: rgba(4, 8, 18, 0.97) !important;
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.80),
+    -4px 0 28px rgba(0, 255, 255, 0.28),
+    inset 0 1px 0 rgba(0, 255, 255, 0.06) !important;
+}
+
+/* Barre XP : dégradé sombre → cyan néon */
+.xp-fill {
+  background: linear-gradient(
+    90deg,
+    #004d6b 0%,
+    #00ccdd 50%,
+    #00ffff 100%
+  ) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.65) !important;
+}
+
+@keyframes flashAccentCyber {
+  0%   { background: var(--card-bg); }
+  40%  { background: rgba(0, 255, 255, 0.10); }
+  100% { background: var(--card-bg); }
+}
+.card.flash {
+  animation: flashAccentCyber 0.7s ease-out !important;
+}

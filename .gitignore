@@ -1,0 +1,47 @@
+# Fichiers IA — prompts et notes internes de développement
+ai/
+
+# Données viewers — ne jamais commiter (informations personnelles des viewers)
+data/users/
+data/
+
+# Sauvegardes locales
+backup/
+
+# Exports web
+exports/
+
+# Fichiers système Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
+
+# Éditeurs et IDEs
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Fichier workspace VS Code (contient des chemins locaux absolus)
+*.code-workspace
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+~$*
+*.bak
+*.swp
+
+# Node (si ajout d'outils de build futurs)
+node_modules/
+npm-debug.log*
+
+# config.json ne doit PAS être ignoré — il doit être versionné (sans le dataPath personnel)
+# Si tu veux ignorer ta config locale, utilise git update-index --assume-unchanged configs/config.json

@@ -1,0 +1,79 @@
+/* ============================================================
+   Card Thème RPG — Fantasy Guild
+   Style : or mystique, médiéval sombre, fiche personnage
+   Activer : window.setTheme('rpg') | ?theme=rpg
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  --accent:      #C9A84C;
+  --accent-dim:  rgba(201, 168, 76, 0.18);
+  --accent-glow: rgba(201, 168, 76, 0.55);
+  --bar-shine:   rgba(255, 230, 120, 0.52);
+
+  --card-bg:   rgba(10, 5, 22, 0.96);
+  --bar-track: rgba(201, 168, 76, 0.10);
+
+  --text-main: #F5E6C8;
+  --text-sub:  rgba(245, 230, 200, 0.52);
+
+  --font-title: 'Cinzel', serif;
+  --font-body:  'IM Fell English', serif;
+}
+
+/* Cadre complet style fiche personnage — bordures sur tous les côtés */
+.card {
+  border-left:   2px solid var(--accent) !important;
+  border-right:  1px solid rgba(201, 168, 76, 0.22) !important;
+  border-top:    2px solid rgba(201, 168, 76, 0.52) !important;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.22) !important;
+  border-radius: 4px !important;
+  background: linear-gradient(
+    135deg,
+    rgba(18, 8, 35, 0.97) 0%,
+    rgba(10, 5, 20, 0.97) 100%
+  ) !important;
+  box-shadow:
+    0 4px 40px rgba(0, 0, 0, 0.72),
+    -2px 0 22px rgba(201, 168, 76, 0.22),
+    inset 0 1px 0 rgba(201, 168, 76, 0.08) !important;
+}
+
+/* Tag rang : sceau doré */
+.rank-tag {
+  background: linear-gradient(135deg, #C9A84C, #7A5C00) !important;
+  color: #1A0A00 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.52),
+    0 0 6px rgba(201, 168, 76, 0.32) !important;
+}
+
+/* Niveau : glow arcane */
+.level-value {
+  text-shadow:
+    0 0 14px var(--accent-glow),
+    0 0 28px rgba(201, 168, 76, 0.22) !important;
+}
+
+/* Barre XP : dégradé arcane purple→gold→yellow */
+.xp-fill {
+  background: linear-gradient(
+    90deg,
+    #6B3FA0 0%,
+    #C9A84C 55%,
+    #FFD060 100%
+  ) !important;
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.62) !important;
+}
+
+@keyframes flashAccentRPG {
+  0%   { background: var(--card-bg); }
+  40%  { background: rgba(201, 168, 76, 0.16); }
+  100% { background: var(--card-bg); }
+}
+.card.flash {
+  animation: flashAccentRPG 0.8s ease-out !important;
+}

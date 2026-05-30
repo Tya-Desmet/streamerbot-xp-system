@@ -1,0 +1,82 @@
+/* ============================================================
+   Thème MINIMAL — Clean Esport
+   Style : sobre, blanc/gris, sans fioritures, lisibilité max
+   Activer : window.setTheme('minimal') | ?theme=minimal
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Inter', sans-serif;
+  --lb-font-body:  'Inter', sans-serif;
+
+  /* Panel — gris foncé, discret */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(18,20,26,0.97) 0%, rgba(12,14,18,0.97) 100%);
+  --lb-panel-border: rgba(255, 255, 255, 0.10);
+  --lb-panel-glow:   0 0 0px transparent, 0 44px 120px rgba(0,0,0,0.88), inset 0 1px 0 rgba(255,255,255,0.06);
+
+  /* Titre — blanc pur */
+  --lb-title-color:  #ffffff;
+  --lb-title-shadow: 0 2px 10px rgba(0,0,0,0.60);
+
+  /* Avatar #1 — blanc */
+  --lb-av1-bg:     linear-gradient(135deg, #ffffff, #d0d0d0);
+  --lb-av1-border: rgba(255, 255, 255, 0.52);
+  --lb-av1-shadow: 0 0 20px rgba(255,255,255,0.26), 0 0 44px rgba(0,0,0,0.32);
+
+  /* Avatar #2 — gris moyen */
+  --lb-av2-bg:     linear-gradient(135deg, #c8c8c8, #888888);
+  --lb-av2-border: rgba(200, 200, 200, 0.36);
+  --lb-av2-shadow: 0 0 12px rgba(0,0,0,0.28);
+
+  /* Avatar #3 — gris sombre */
+  --lb-av3-bg:     linear-gradient(135deg, #a0a0a0, #606060);
+  --lb-av3-border: rgba(160, 160, 160, 0.32);
+  --lb-av3-shadow: 0 0 10px rgba(0,0,0,0.22);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #ffffff, #d0d0d0);
+  --lb-badge1-color: #111111;
+  --lb-badge2-bg:    linear-gradient(135deg, #c8c8c8, #888888);
+  --lb-badge2-color: #111111;
+  --lb-badge3-bg:    linear-gradient(135deg, #a0a0a0, #606060);
+  --lb-badge3-color: #f0f0f0;
+
+  /* Noms podium */
+  --lb-pname1:  #ffffff;
+  --lb-pname2:  #d4d4d4;
+  --lb-pname3:  #b0b0b0;
+  --lb-plevel1: rgba(255,255,255,0.56);
+  --lb-plevel2: rgba(212,212,212,0.50);
+  --lb-plevel3: rgba(176,176,176,0.46);
+
+  /* Piliers — gris structurés */
+  --lb-pillar1-bg:   linear-gradient(180deg, #505050 0%, #282828 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #3c3c3c 0%, #1e1e1e 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #303030 0%, #181818 100%);
+  --lb-pillar-shine: rgba(255,255,255,0.08);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(255,255,255,0.08);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(255,255,255,0.04);
+  --lb-row-border:      rgba(255,255,255,0.08);
+  --lb-row-rank:        #ffffff;
+  --lb-row-name:        #ffffff;
+  --lb-row-level:       rgba(255,255,255,0.42);
+  --lb-row-empty-color: rgba(255,255,255,0.18);
+
+  /* Couronne — blanc discret */
+  --lb-crown-filter: drop-shadow(0 0 5px rgba(255,255,255,0.65));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(255,255,255,0.65)); }
+  50% {
+    filter:
+      drop-shadow(0 0 10px rgba(255,255,255,0.92))
+      drop-shadow(0 0 26px rgba(200,200,200,0.38));
+  }
+}
