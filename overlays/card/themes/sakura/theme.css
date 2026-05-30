@@ -1,0 +1,60 @@
+/* ============================================================
+   Card Thème SAKURA — Fleurs de Cerisier
+   Style : rose sakura doux, lavande, pêche — printemps japonais
+   Activer : window.setTheme('sakura') | ?theme=sakura
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lato:wght@400;700&display=swap');
+
+:root {
+  --accent:      #ff8fab;
+  --accent-dim:  rgba(255, 143, 171, 0.18);
+  --accent-glow: rgba(255, 143, 171, 0.52);
+  --bar-shine:   rgba(255, 180, 200, 0.50);
+
+  --card-bg:   rgba(20, 8, 18, 0.95);
+  --bar-track: rgba(255, 143, 171, 0.10);
+
+  --text-main: #ffe8ef;
+  --text-sub:  rgba(255, 143, 171, 0.58);
+
+  --font-title: 'Cormorant Garamond', serif;
+  --font-body:  'Lato', sans-serif;
+}
+
+/* Bordure rose sakura, halo doux */
+.card {
+  border-left:   3px solid #ff8fab !important;
+  border-top:    1px solid rgba(255, 143, 171, 0.18) !important;
+  border-right:  1px solid rgba(255, 143, 171, 0.10) !important;
+  border-bottom: 1px solid rgba(255, 143, 171, 0.10) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(25, 8, 22, 0.96) 0%,
+    rgba(15, 5, 14, 0.96) 100%
+  ) !important;
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.65),
+    -3px 0 20px rgba(255, 143, 171, 0.22),
+    inset 0 1px 0 rgba(255, 183, 197, 0.06) !important;
+}
+
+/* Barre XP : fond sombre → rose sakura dégradé */
+.xp-fill {
+  background: linear-gradient(
+    90deg,
+    #6a1535 0%,
+    #c85080 55%,
+    #ff8fab 100%
+  ) !important;
+  box-shadow: 0 0 10px rgba(255, 143, 171, 0.55) !important;
+}
+
+@keyframes flashAccentSakura {
+  0%   { background: var(--card-bg); }
+  40%  { background: rgba(255, 143, 171, 0.10); }
+  100% { background: var(--card-bg); }
+}
+.card.flash {
+  animation: flashAccentSakura 0.75s ease-out !important;
+}

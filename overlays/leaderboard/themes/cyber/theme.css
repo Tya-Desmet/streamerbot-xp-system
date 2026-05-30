@@ -1,0 +1,82 @@
+/* ============================================================
+   Thème CYBER — Cyberpunk Neon
+   Style : néon cyan, magenta, vert — futuriste, sombre, glitch
+   Activer : window.setTheme('cyber') | ?theme=cyber
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Orbitron', monospace;
+  --lb-font-body:  'Rajdhani', sans-serif;
+
+  /* Panel — noir absolu, bordure néon */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(4,8,18,0.98) 0%, rgba(0,4,12,0.98) 100%);
+  --lb-panel-border: rgba(0, 255, 255, 0.20);
+  --lb-panel-glow:   0 0 70px rgba(0,200,255,0.10), 0 44px 120px rgba(0,0,0,0.95), inset 0 1px 0 rgba(0,255,255,0.08);
+
+  /* Titre — cyan électrique */
+  --lb-title-color:  #00ffff;
+  --lb-title-shadow: 0 0 18px rgba(0,255,255,0.80), 0 0 55px rgba(0,150,255,0.32);
+
+  /* Avatar #1 — cyan néon */
+  --lb-av1-bg:     linear-gradient(135deg, #00e5ff, #005f80);
+  --lb-av1-border: rgba(0, 255, 255, 0.60);
+  --lb-av1-shadow: 0 0 22px rgba(0,255,255,0.55), 0 0 55px rgba(0,180,255,0.22);
+
+  /* Avatar #2 — magenta */
+  --lb-av2-bg:     linear-gradient(135deg, #ff40ff, #800080);
+  --lb-av2-border: rgba(255, 64, 255, 0.45);
+  --lb-av2-shadow: 0 0 15px rgba(255,64,255,0.35);
+
+  /* Avatar #3 — vert néon */
+  --lb-av3-bg:     linear-gradient(135deg, #00ff88, #006040);
+  --lb-av3-border: rgba(0, 255, 136, 0.40);
+  --lb-av3-shadow: 0 0 13px rgba(0,255,136,0.28);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #00ffff, #005f80);
+  --lb-badge1-color: #001820;
+  --lb-badge2-bg:    linear-gradient(135deg, #ff40ff, #800080);
+  --lb-badge2-color: #ffffff;
+  --lb-badge3-bg:    linear-gradient(135deg, #00ff88, #006040);
+  --lb-badge3-color: #001a10;
+
+  /* Noms podium */
+  --lb-pname1:  #00ffff;
+  --lb-pname2:  #ff80ff;
+  --lb-pname3:  #00ff88;
+  --lb-plevel1: rgba(0,255,255,0.68);
+  --lb-plevel2: rgba(255,128,255,0.52);
+  --lb-plevel3: rgba(0,255,136,0.52);
+
+  /* Piliers — blocs sombres avec halo néon */
+  --lb-pillar1-bg:   linear-gradient(180deg, #004c60 0%, #001a26 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #4d004d 0%, #1a001a 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #003320 0%, #000f0a 100%);
+  --lb-pillar-shine: rgba(0,255,255,0.08);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(0,255,255,0.14);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(0,255,255,0.03);
+  --lb-row-border:      rgba(0,255,255,0.10);
+  --lb-row-rank:        #00ffff;
+  --lb-row-name:        #e0ffff;
+  --lb-row-level:       rgba(0,255,255,0.46);
+  --lb-row-empty-color: rgba(0,255,255,0.18);
+
+  /* Couronne — pulsation cyan */
+  --lb-crown-filter: drop-shadow(0 0 8px rgba(0,255,255,0.90));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(0,255,255,0.90)); }
+  50% {
+    filter:
+      drop-shadow(0 0 16px rgba(0,255,255,1))
+      drop-shadow(0 0 36px rgba(0,180,255,0.55));
+  }
+}

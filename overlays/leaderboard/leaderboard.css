@@ -1,0 +1,496 @@
+/* ============================================================
+   leaderboard.css — Structure, layout, animations
+   Couleurs via variables CSS — voir overlays/leaderboard/themes/
+   Pour changer de thème : window.setTheme('rpg')
+   ============================================================ */
+
+/* ===== Variables par défaut (fallback sans thème chargé) ===== */
+:root {
+  /* Panel */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(14,9,28,0.97) 0%, rgba(8,5,17,0.97) 100%);
+  --lb-panel-border: rgba(255, 210, 90, 0.14);
+  --lb-panel-glow:   0 0 70px rgba(200,145,10,0.06), 0 44px 120px rgba(0,0,0,0.92), inset 0 1px 0 rgba(255,210,90,0.07);
+
+  /* Titre */
+  --lb-title-color:  #ffd36a;
+  --lb-title-shadow: 0 0 26px rgba(255,185,40,0.55), 0 0 58px rgba(255,120,0,0.18);
+  --lb-font-title:   'Bebas Neue', sans-serif;
+  --lb-font-body:    'Outfit', sans-serif;
+
+  /* Avatars podium */
+  --lb-av1-bg:     linear-gradient(135deg, #FFD54A, #FF8800);
+  --lb-av1-border: rgba(255, 200, 60, 0.48);
+  --lb-av1-shadow: 0 0 22px rgba(255,175,0,0.44), 0 0 55px rgba(255,120,0,0.16);
+
+  --lb-av2-bg:     linear-gradient(135deg, #d8d8d8, #929292);
+  --lb-av2-border: rgba(210, 210, 210, 0.38);
+  --lb-av2-shadow: 0 0 15px rgba(180,180,180,0.2);
+
+  --lb-av3-bg:     linear-gradient(135deg, #cd7f32, #8b4010);
+  --lb-av3-border: rgba(190, 118, 46, 0.38);
+  --lb-av3-shadow: 0 0 13px rgba(158,98,26,0.2);
+
+  /* Badges de rang */
+  --lb-badge1-bg:    linear-gradient(135deg, #FFD700, #FFA400);
+  --lb-badge1-color: #3a2000;
+  --lb-badge2-bg:    linear-gradient(135deg, #d8d8d8, #929292);
+  --lb-badge2-color: #1a1a1a;
+  --lb-badge3-bg:    linear-gradient(135deg, #cd7f32, #8b4010);
+  --lb-badge3-color: #f5dfc0;
+
+  /* Noms joueurs podium */
+  --lb-pname1:  #ffd36a;
+  --lb-pname2:  #e8e8e8;
+  --lb-pname3:  #deb887;
+  --lb-plevel1: rgba(255,210,100,0.68);
+  --lb-plevel2: rgba(230,230,230,0.5);
+  --lb-plevel3: rgba(210,180,140,0.5);
+
+  /* Piliers */
+  --lb-pillar1-bg:   linear-gradient(180deg, #c9a227 0%, #7a5c00 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #b87333 0%, #6b3a1f 100%);
+  --lb-pillar-shine: rgba(255,255,255,0.10);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(255,210,90,0.12);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(255,255,255,0.04);
+  --lb-row-border:      rgba(255,210,90,0.07);
+  --lb-row-rank:        #ffd36a;
+  --lb-row-name:        #fff;
+  --lb-row-level:       rgba(255,255,255,0.44);
+  --lb-row-empty-color: rgba(255,255,255,0.20);
+
+  /* Couronne */
+  --lb-crown-filter: drop-shadow(0 0 5px rgba(255,215,0,0.55));
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: var(--lb-font-body);
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   Panel
+============================================================ */
+.panel {
+  width: min(94vw, 920px);
+  padding: 16px 28px 22px;
+  border-radius: 22px;
+  background: var(--lb-panel-bg);
+  border: 1px solid var(--lb-panel-border);
+  box-shadow: var(--lb-panel-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  /* Invisible par défaut — JS ajoute anim-in pour révéler */
+  opacity: 0;
+  transform: scale(0.9) translateY(26px);
+  will-change: transform, opacity;
+}
+
+.panel.anim-in {
+  animation: panelReveal 0.62s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+}
+
+.panel.anim-out {
+  animation: panelDismiss 0.46s ease-in forwards;
+}
+
+/* ============================================================
+   Header
+============================================================ */
+.header {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-16px);
+  will-change: transform, opacity;
+}
+
+.header.anim-in {
+  animation: headerReveal 0.52s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.header h1 {
+  font-family: var(--lb-font-title);
+  font-size: 70px;
+  letter-spacing: 10px;
+  color: var(--lb-title-color);
+  line-height: 1;
+  text-shadow: var(--lb-title-shadow);
+}
+
+/* ============================================================
+   Podium
+============================================================ */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 44px;
+  width: 100%;
+  height: 280px;
+  padding: 0 12px;
+}
+
+/* ---- Slot ---- */
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 0 0 auto;
+  min-width: 140px;
+
+  opacity: 0;
+  transform: translateY(38px) scale(0.87);
+  will-change: transform, opacity;
+}
+
+.slot.anim-in {
+  animation: slotReveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Slot #1 : animation avec rebond (plus expressive) */
+.slot.anim-in-first {
+  animation: slotRevealFirst 0.72s cubic-bezier(0.15, 0.85, 0.15, 1.08) forwards;
+}
+
+/* Ordre visuel : slot-2 gauche · slot-1 centre · slot-3 droite */
+.slot-1 { order: 2; }
+.slot-2 { order: 1; }
+.slot-3 { order: 3; }
+
+/* ---- Couronne ---- */
+.crown {
+  display: block;
+  font-size: 26px;
+  margin-bottom: 7px;
+  opacity: 0;
+  transition: opacity 0.42s ease;
+  filter: var(--lb-crown-filter);
+}
+
+.crown.anim-crown {
+  opacity: 1;
+  animation:
+    crownFloat 2.7s ease-in-out 0.42s infinite,
+    crownGlow  2.3s ease-in-out 0.42s infinite;
+}
+
+/* ---- Avatar wrap ---- */
+.av-wrap {
+  position: relative;
+}
+
+/* ---- Avatar cercle ---- */
+.av {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: 'Bebas Neue', sans-serif;
+  color: #fff;
+  border: 3px solid transparent;
+  text-shadow: 0 2px 5px rgba(0,0,0,0.55);
+}
+
+.slot-1 .av {
+  width: 114px;
+  height: 114px;
+  font-size: 44px;
+  background: var(--lb-av1-bg);
+  border-color: var(--lb-av1-border);
+  box-shadow: var(--lb-av1-shadow);
+}
+
+.slot-2 .av {
+  width: 90px;
+  height: 90px;
+  font-size: 35px;
+  background: var(--lb-av2-bg);
+  border-color: var(--lb-av2-border);
+  box-shadow: var(--lb-av2-shadow);
+}
+
+.slot-3 .av {
+  width: 82px;
+  height: 82px;
+  font-size: 31px;
+  background: var(--lb-av3-bg);
+  border-color: var(--lb-av3-border);
+  box-shadow: var(--lb-av3-shadow);
+}
+
+/* ---- Badge rang ---- */
+.rank-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  border: 2px solid rgba(0,0,0,0.25);
+}
+
+.slot-1 .rank-badge {
+  width: 28px;
+  height: 28px;
+  font-size: 15px;
+  background: var(--lb-badge1-bg);
+  color: var(--lb-badge1-color);
+}
+
+.slot-2 .rank-badge {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  background: var(--lb-badge2-bg);
+  color: var(--lb-badge2-color);
+}
+
+.slot-3 .rank-badge {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  background: var(--lb-badge3-bg);
+  color: var(--lb-badge3-color);
+}
+
+/* ---- Nom joueur ---- */
+.pname {
+  margin-top: 8px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.slot-1 .pname {
+  font-size: 22px;
+  color: var(--lb-pname1);
+}
+
+.slot-2 .pname {
+  font-size: 19px;
+  color: var(--lb-pname2);
+}
+
+.slot-3 .pname {
+  font-size: 18px;
+  color: var(--lb-pname3);
+}
+
+/* ---- Niveau ---- */
+.plevel {
+  margin-top: 2px;
+}
+
+.slot-1 .plevel {
+  font-size: 15px;
+  color: var(--lb-plevel1);
+}
+
+.slot-2 .plevel {
+  font-size: 13px;
+  color: var(--lb-plevel2);
+}
+
+.slot-3 .plevel {
+  font-size: 13px;
+  color: var(--lb-plevel3);
+}
+
+/* ---- Pilier podium ---- */
+.pillar {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 6px 6px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.pillar::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 28%;
+  background: var(--lb-pillar-shine);
+}
+
+.slot-1 .pillar {
+  height: 76px;
+  min-width: 140px;
+  background: var(--lb-pillar1-bg);
+}
+
+.slot-2 .pillar {
+  height: 50px;
+  min-width: 120px;
+  background: var(--lb-pillar2-bg);
+}
+
+.slot-3 .pillar {
+  height: 32px;
+  min-width: 112px;
+  background: var(--lb-pillar3-bg);
+}
+
+/* ============================================================
+   Séparateur
+============================================================ */
+.sep {
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lb-sep-color), transparent);
+  margin: 2px 0;
+}
+
+/* ============================================================
+   Liste (rangs 4-10)
+============================================================ */
+.list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.row {
+  width: 88%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--lb-row-bg);
+  border: 1px solid var(--lb-row-border);
+
+  opacity: 0;
+  transform: translateX(18px);
+  will-change: transform, opacity;
+}
+
+.row.anim-in {
+  animation: rowReveal 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Rangée vide : apparaît mais reste discrète */
+.row.row-empty.anim-in {
+  animation: rowRevealEmpty 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.row-rank {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 19px;
+  color: var(--lb-row-rank);
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.row-name {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lb-row-name);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-level {
+  font-size: 14px;
+  color: var(--lb-row-level);
+  flex-shrink: 0;
+}
+
+.row.row-empty .row-name,
+.row.row-empty .row-level {
+  color: var(--lb-row-empty-color);
+}
+
+/* ============================================================
+   Keyframes — GPU uniquement (transform + opacity)
+============================================================ */
+
+@keyframes panelReveal {
+  from { opacity: 0; transform: scale(0.9) translateY(26px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes panelDismiss {
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.94) translateY(16px); }
+}
+
+@keyframes headerReveal {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slotReveal {
+  from { opacity: 0; transform: translateY(38px) scale(0.87); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Slot #1 : montée avec rebond subtil pour l'effet esport */
+@keyframes slotRevealFirst {
+  0%   { opacity: 0; transform: translateY(52px) scale(0.82); }
+  50%  { opacity: 1; transform: translateY(-9px) scale(1.06); }
+  75%  { transform: translateY(4px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes rowReveal {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes rowRevealEmpty {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 0.28; transform: translateX(0); }
+}
+
+/* Couronne : flottement continu + glow pulsé (override par thème) */
+@keyframes crownFloat {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%       { transform: translateY(-8px) rotate(3deg); }
+}
+
+@keyframes crownGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.62));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 13px rgba(255, 225, 0, 1))
+      drop-shadow(0 0 30px rgba(255, 185, 0, 0.42));
+  }
+}

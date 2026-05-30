@@ -1,0 +1,10 @@
+{
+  "dataPath":                   "C:\\Users\\TonNom\\streamerbot-xp-system\\data\\users",
+  "xpPerMessage":               10,
+  "xpPerWatch":                 1,
+  "cooldownSeconds":            30,
+  "minMessageLength":           2,
+  "leaderboardIntervalMinutes": 5,
+  "obsLeaderboardSource":       "Leaderboard",
+  "obsCardSource":              "ProfileCard"
+}
