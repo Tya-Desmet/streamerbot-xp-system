@@ -1,0 +1,32 @@
+# ── Données viewers (fichiers personnels, ne jamais commiter) ──
+data/users/
+
+# ── Répertoire IA (usage interne uniquement) ──
+ai/
+.claude/
+
+# ── Exports et backups ──
+exports/
+backup/
+
+# ── Fichiers de dev internes ──
+docs/PROMPTS.md
+docs/EVENTS.md
+docs/WORKFLOW.md
+docs/wordklow IA
+
+# ── IDE / éditeur ──
+*.code-workspace
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ── Windows / système ──
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Logs ──
+*.log
+logs/
