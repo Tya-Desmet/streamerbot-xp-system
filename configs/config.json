@@ -1,0 +1,41 @@
+{
+  "dataPath": "C:\\Stream\\streamerbot-xp-system\\data\\users",
+  "theme":    "default",
+
+  "xp": {
+    "perMessage":       10,
+    "perWatchInterval": 5,
+    "cooldownSeconds":  30,
+    "minMessageLength": 2
+  },
+
+  "watchtime": {
+    "enabled":         true,
+    "intervalMinutes": 5,
+    "streakEnabled":   true,
+    "countOffline":    false
+  },
+
+  "leaderboard": {
+    "intervalMinutes": 5,
+    "topCount":        10
+  },
+
+  "obs": {
+    "leaderboardSource": "Leaderboard",
+    "cardSource":        "ProfileCard"
+  },
+
+  "rank": {
+    "cooldownSeconds": 30
+  },
+
+  "bots": {
+    "excludeBroadcaster": false,
+    "broadcasterName":    ""
+  },
+
+  "debug": {
+    "verbose": false
+  }
+}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Card</title>
+  <link rel="stylesheet" href="card.css">
+  <!-- Thème actif — JS peut changer dynamiquement via window.setTheme('rpg') -->
+  <!-- URL param : card.html?theme=cyber -->
+  <link id="theme-css" rel="stylesheet" href="themes/default/theme.css">
+</head>
+
+<body class="theme-default">
+
+  <div id="card" class="card hidden">
+
+    <!-- Colonne gauche : avatar + badge rang -->
+    <div class="col-avatar">
+      <div class="avatar-wrap">
+        <img id="avatar" class="avatar" src="" alt="">
+        <div class="rank-tag">#<span id="rank">?</span></div>
+      </div>
+    </div>
+
+    <!-- Colonne droite : stats -->
+    <div class="col-info">
+
+      <!-- Identité -->
+      <div class="username" id="username">---</div>
+      <div class="card-title" id="card-title"></div>
+
+      <!-- Niveau -->
+      <div class="row-level">
+        <span class="level-label">NIV.</span>
+        <span class="level-value" id="level">1</span>
+      </div>
+
+      <!-- Stats : messages + watchtime -->
+      <div class="row-stats">
+        <div class="stat-item">
+          <span class="stat-label">MSG</span>
+          <span class="stat-value" id="messages">—</span>
+        </div>
+        <span class="stat-sep">·</span>
+        <div class="stat-item">
+          <span class="stat-label">WATCH</span>
+          <span class="stat-value" id="watchtime">—</span>
+        </div>
+      </div>
+
+      <!-- Barre XP : scaleX() uniquement, zéro reflow -->
+      <div class="xp-track">
+        <div class="xp-fill" id="xp-fill"></div>
+      </div>
+
+      <!-- XP texte : "2450 / 3100 XP" -->
+      <div class="row-xp">
+        <span class="xp-current" id="xp-current">0</span>
+        <span class="xp-sep">/</span>
+        <span class="xp-next" id="xp-next">1000 XP</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Modules JS — ordre de chargement important -->
+  <script src="js/animations.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/socket.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

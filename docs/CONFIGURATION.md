@@ -1,0 +1,172 @@
+# Configuration — Référence complète
+
+Le fichier `configs/config.json` est **l'unique source de configuration** du système. Il est pointé par la variable globale `xp_configPath` dans Streamer.bot. Aucune autre variable globale n'est nécessaire.
+
+---
+
+## Structure complète
+
+```json
+{
+  "dataPath": "C:\\Stream\\streamerbot-xp-system\\data\\users",
+  "theme":    "default",
+
+  "xp": {
+    "perMessage":       10,
+    "perWatchInterval": 5,
+    "cooldownSeconds":  30,
+    "minMessageLength": 2
+  },
+
+  "watchtime": {
+    "enabled":         true,
+    "intervalMinutes": 5,
+    "streakEnabled":   true,
+    "countOffline":    false
+  },
+
+  "leaderboard": {
+    "intervalMinutes": 5,
+    "topCount":        10
+  },
+
+  "obs": {
+    "leaderboardSource": "Leaderboard",
+    "cardSource":        "ProfileCard"
+  },
+
+  "rank": {
+    "cooldownSeconds": 30
+  },
+
+  "bots": {
+    "excludeBroadcaster": false,
+    "broadcasterName":    ""
+  },
+
+  "debug": {
+    "verbose": false
+  }
+}
+```
+
+---
+
+## Champs racine
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `dataPath` | string | `""` | **Obligatoire.** Chemin absolu vers `data/users/`. Doubles backslashs sous Windows. |
+| `theme` | string | `"default"` | Thème visuel. Doit correspondre à un dossier dans `themes/`. |
+
+---
+
+## Section `xp`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `perMessage` | int | `10` | XP par message chat valide. |
+| `perWatchInterval` | int | `5` | XP par cycle de watchtime. |
+| `cooldownSeconds` | int | `30` | Délai minimum (secondes) entre deux gains d'XP par message pour un même viewer. |
+| `minMessageLength` | int | `2` | Longueur minimale du message. Les commandes (`!`, `/`, `.`) sont toujours ignorées. |
+
+---
+
+## Section `watchtime`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `enabled` | bool | `true` | Active le watchtime. `false` = aucun XP watchtime distribué. |
+| `intervalMinutes` | int | `5` | Fréquence du trigger Present Viewers. Doit correspondre à la configuration du trigger dans Streamer.bot. |
+| `streakEnabled` | bool | `true` | Active le bonus WatchStreak (fidélité consécutive). |
+| `countOffline` | bool | `false` | Si `true`, distribue du watchtime même hors live. Utile pour les tests. |
+
+**Bonus WatchStreak :**
+
+| Streak | Durée consécutive | XP bonus |
+|---|---|---|
+| 3–5 cycles | 15 min+ | +1 XP |
+| 6–11 cycles | 30 min+ | +2 XP |
+| 12–23 cycles | 1h+ | +3 XP |
+| 24+ cycles | 2h+ | +5 XP |
+
+---
+
+## Section `leaderboard`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `intervalMinutes` | int | `5` | Fréquence de mise à jour du leaderboard OBS (Timer SB). |
+| `topCount` | int | `10` | Nombre de viewers affichés. |
+
+---
+
+## Section `obs`
+
+Les noms doivent correspondre **exactement** aux noms des Browser Sources dans OBS.
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `leaderboardSource` | string | `"Leaderboard"` | Nom de la Browser Source OBS leaderboard. |
+| `cardSource` | string | `"ProfileCard"` | Nom de la Browser Source OBS profile card. |
+
+---
+
+## Section `rank`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `cooldownSeconds` | int | `30` | Délai minimum entre deux `!rank` pour un même viewer. |
+
+---
+
+## Section `bots`
+
+Les bots standards sont dans `configs/excluded-users.json`. Cette section gère uniquement le broadcaster.
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `excludeBroadcaster` | bool | `false` | Exclure le broadcaster du système. |
+| `broadcasterName` | string | `""` | Login Twitch du broadcaster (minuscules). Requis si `excludeBroadcaster: true`. |
+
+---
+
+## Section `debug`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `verbose` | bool | `false` | Réservé — pas d'effet actuellement. |
+
+---
+
+## Comportement des valeurs manquantes
+
+Si un champ est absent du JSON, `ConfigService` applique automatiquement la valeur par défaut. Si une section entière est absente (`"watchtime"` manquant par exemple), elle est recréée avec tous ses défauts. **La configuration n'a pas besoin d'être complète pour fonctionner.**
+
+---
+
+## Configuration minimale fonctionnelle
+
+```json
+{
+  "dataPath": "C:\\Stream\\streamerbot-xp-system\\data\\users"
+}
+```
+
+Tous les autres champs utilisent leurs valeurs par défaut.
+
+---
+
+## Chemins Windows
+
+```json
+"dataPath": "C:\\Users\\TonNom\\streamerbot-xp-system\\data\\users"
+```
+
+Les backslashs **doivent être doublés** dans JSON. Les chemins relatifs ne sont pas supportés.
+
+---
+
+## Prise d'effet
+
+Modifier `config.json` prend effet au **prochain déclenchement** de chaque action — aucune recompilation nécessaire. Chaque action embarque sa propre copie de `ConfigService` qui relit le fichier à chaque exécution.

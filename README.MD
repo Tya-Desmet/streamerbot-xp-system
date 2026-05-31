@@ -1,372 +1,100 @@
-    # README 1 — Streamer.bot XP System
+# Streamer.bot XP System
 
-## README Principal
-
-# Présentation
-
-Streamer.bot XP System est un système de gamification Twitch modulaire basé sur Streamer.bot.
-
-Le projet permet à un streamer d’ajouter à son stream :
-
-* système XP
-* niveaux
-* leaderboard
-* overlays OBS
-* profile cards
-* rewards Twitch interactives
-* export web optionnel
-
-Le projet est conçu pour :
-
-* fonctionner entièrement en local
-* être facilement installable
-* être maintenable avec IA
-* être extensible
-* être modulaire
-* être utilisable par des streamers débutants
+Système de progression XP pour streamers Twitch — intégration Streamer.bot + OBS, stockage local JSON, aucune base de données.
 
 ---
 
-# Philosophie du projet
+## Fonctionnalités
 
-Le projet n’est PAS :
-
-* une plateforme SaaS
-* un service cloud global
-* une base de données centralisée
-* un système multi-streamers partagé
-
-Chaque streamer possède :
-
-* ses données
-* ses viewers
-* ses overlays
-* son leaderboard
-* son export web
-
----
-
-# Technologies utilisées
-
-## Core
-
-* Streamer.bot
-* C#
-* JSON local
-* HTML/CSS/JavaScript
-* OBS Studio
+| Fonctionnalité | État |
+|---|---|
+| XP automatique par message chat | ✅ V1 |
+| Niveaux calculés dynamiquement (`100 × N^1.5`) | ✅ V1 |
+| Leaderboard Top 10 OBS animé | ✅ V1 |
+| Profile Card OBS (Channel Point) | ✅ V1 |
+| Anti-spam (cooldown, longueur min, filtre commandes) | ✅ V1 |
+| 6 thèmes visuels (default, rpg, cyber, minimal, tokyo, sakura) | ✅ V1 |
+| Commande `!rank` en chat | ✅ V2 |
+| Titres par niveau (configurable par thème) | ✅ V2 |
+| Exclusion bots centralisée (`excluded-users.json`) | ✅ V2 |
+| Watchtime hybride (présence SB + activité chat) | ✅ V2 |
+| WatchStreak — bonus de fidélité progressif | ✅ V2 |
+| Configuration centralisée (un seul `config.json`) | ✅ V2 |
 
 ---
 
-# Architecture générale
+## Architecture
 
-```text
-Twitch
-↓
-Streamer.bot
-   ├── Events
-   ├── Commands
-   ├── Timers
-   ├── Rewards
-   ├── C# Scripts
-   └── Local JSON Database
-            ├── OBS Overlays
-            ├── Backups
-            └── Optional Web Export
+```
+Twitch Chat ──→ Streamer.bot (6 actions C#) ──→ data/users/*.json
+                                             ──→ WebSocket ──→ OBS Browser Sources
+```
+
+**Une seule variable globale dans Streamer.bot :** `xp_configPath` → chemin vers `configs/config.json`
+
+---
+
+## Installation rapide
+
+1. Placer le projet dans un dossier stable et créer `data/users/`
+2. Éditer `configs/config.json` — renseigner `dataPath`
+3. Dans Streamer.bot : créer `xp_configPath`, activer WebSocket, importer les 6 actions
+4. Dans OBS : ajouter les 2 Browser Sources
+
+→ Guide complet : [docs/INSTALLATION.md](docs/INSTALLATION.md)
+
+---
+
+## Structure du projet
+
+```
+streamerbot-xp-system/
+├── actions/              # Actions Streamer.bot (C# inline)
+│   ├── USER_GetOrCreate.cs
+│   ├── XP_Add.cs
+│   ├── LEADERBOARD_Update.cs
+│   ├── CARD_ShowProfile.cs
+│   ├── RANK_ShowCommand.cs
+│   └── XP_WatchTime_V2.cs
+├── scripts/              # Services C# (référence canonique)
+├── overlays/             # HTML/CSS/JS pour OBS
+│   ├── leaderboard/
+│   └── card/
+├── configs/
+│   ├── config.json       # Unique source de configuration
+│   ├── titles.json       # Titres personnalisés
+│   └── excluded-users.json
+├── themes/               # Thèmes visuels
+└── data/users/           # Profils viewers (JSON, gitignorés)
 ```
 
 ---
 
-# Objectifs principaux
+## Documentation
 
-# V1
-
-## Fonctionnalités MVP
-
-* XP via chat
-* XP via watchtime
-* système de niveaux
-* anti-spam
-* leaderboard
-* commande !rank
-* overlay OBS
-* sauvegardes JSON
+| Document | Contenu |
+|---|---|
+| [INSTALLATION.md](docs/INSTALLATION.md) | Setup complet étape par étape (~20 min) |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | Référence complète de config.json |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Flux de données, services, UserProfile |
+| [THEMES.md](docs/THEMES.md) | Changer et créer des thèmes |
+| [TITLES.md](docs/TITLES.md) | Configurer les titres par niveau |
+| [BOT_EXCLUSION.md](docs/BOT_EXCLUSION.md) | Gérer la liste des bots exclus |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Diagnostic et résolution de problèmes |
 
 ---
 
-# V2
+## État du projet
 
-* profile cards
-* thèmes overlays
-* rewards Twitch avancées
-* animations améliorées
-
----
-
-# V3
-
-* export web
-* website template
-* profils publics
-* statistiques stream
+| Version | État | Contenu |
+|---|---|---|
+| V1 | ✅ Fonctionnelle | XP chat, levels, leaderboard, profile card, 6 thèmes |
+| V2 | ✅ Implémentée | Watchtime hybride, !rank, titres, bot exclusion, config centralisée |
+| V3 | 🔲 Planifiée | Export web, statistiques avancées |
+| V4 | 🔲 Planifiée | Boss system, récompenses, saisons, achievements |
 
 ---
 
-# V4
+## Licence
 
-* achievements
-* quêtes
-* saisons
-* marketplace thèmes
-* statistiques avancées
-
----
-
-# Architecture dossiers
-
-```text
-/actions
-/scripts
-/config
-/data
-/export
-/backup
-/themes
-/overlays
-/modules
-/docs
-```
-
----
-
-# Structure des données
-
-## Utilisateurs
-
-```text
-/data/users/{username}.json
-```
-
----
-
-# Exemple utilisateur
-
-```json
-{
-  "username": "Mystya",
-  "xp": 1450,
-  "level": 12,
-  "messages": 592,
-  "watchTime": 320,
-  "rank": 4,
-  "lastMessageTimestamp": 174843999
-}
-```
-
----
-
-# Conventions importantes
-
-# RÈGLE 1
-
-Toute modification XP DOIT passer par :
-
-```csharp
-AddXp(user, amount, reason)
-```
-
----
-
-# RÈGLE 2
-
-Un fichier = une responsabilité.
-
----
-
-# RÈGLE 3
-
-Pas de scripts géants.
-
-Maximum recommandé :
-
-```text
-300 lignes
-```
-
----
-
-# RÈGLE 4
-
-Toutes les actions doivent suivre une convention claire.
-
-## Exemples
-
-```text
-XP_Add
-XP_LevelUp
-USER_GetRank
-OVERLAY_ShowLeaderboard
-CARD_ShowProfile
-```
-
----
-
-# Overlay OBS
-
-Les overlays utilisent des Browser Sources OBS.
-
-## Exemples
-
-```text
-leaderboard.html
-card.html
-top3.html
-```
-
----
-
-# Leaderboard
-
-## Modes
-
-### Popup automatique
-
-Toutes les 10 minutes.
-
-### Overlay permanent
-
-Affichage Top 3.
-
----
-
-# Système de niveaux
-
-## Formule
-
-XP nécessaire :
-
-```text
-100 × level^1.5
-```
-
----
-
-# Anti-spam
-
-## Conditions minimales
-
-* cooldown utilisateur
-* minimum caractères
-* ignore commandes
-* ignore répétitions
-
----
-
-# Sauvegardes
-
-Le système doit effectuer des backups automatiques.
-
-## Structure
-
-```text
-/backup
-```
-
----
-
-# Export Web
-
-## IMPORTANT
-
-Le module web est OPTIONNEL.
-
-Aucune donnée globale.
-Aucun classement mondial.
-
-Chaque streamer exporte uniquement ses données.
-
----
-
-# Export JSON
-
-## Exemples
-
-```text
-/export/leaderboard.json
-/export/stats.json
-/export/users/*.json
-```
-
----
-
-# Website Template
-
-Le site web lit uniquement les fichiers exportés.
-
-Stack recommandée :
-
-* Next.js
-* TailwindCSS
-
----
-
-# Installation utilisateur
-
-## Workflow cible
-
-```text
-1. Installer Streamer.bot
-2. Importer le pack
-3. Ajouter overlays OBS
-4. Configurer rewards Twitch
-5. Start
-```
-
----
-
-# Configuration globale
-
-## config.json
-
-```json
-{
-  "xpPerMessage": 5,
-  "xpPerWatch": 15,
-  "watchIntervalMinutes": 5,
-  "leaderboardIntervalMinutes": 10,
-  "theme": "default",
-  "enableTop3Overlay": true,
-  "enableWebExport": false
-}
-```
-
----
-
-# Documentation obligatoire
-
-```text
-/docs
-   ARCHITECTURE.md
-   EVENTS.md
-   DATA.md
-   OVERLAYS.md
-   THEMES.md
-   INSTALLATION.md
-```
-
----
-
-# Contraintes IA
-
-Le projet sera principalement développé avec IA.
-
-Donc :
-
-* petits fichiers
-* conventions strictes
-* documentation permanente
-* responsabilités isolées
-* aucun code dupliqué
-
----
-
+[MIT](LICENSE) — Desmet Tya
