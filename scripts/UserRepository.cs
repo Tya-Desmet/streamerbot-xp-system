@@ -36,6 +36,7 @@ public class UserProfile
     public int    Rank                 { get; set; }
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
+    public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
 }
 
 // Repository — lecture et écriture JSON uniquement
@@ -69,7 +70,8 @@ public class UserRepository
             WatchTime            = 0,
             Rank                 = 0,
             LastMessageTimestamp = 0,
-            LastWatchTimestamp   = 0
+            LastWatchTimestamp   = 0,
+            WatchStreak          = 0
         };
 
         SaveUser(user);
