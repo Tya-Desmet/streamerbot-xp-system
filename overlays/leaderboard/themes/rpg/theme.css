@@ -1,0 +1,82 @@
+/* ============================================================
+   Thème RPG — Fantasy Guild
+   Style : or mystique, médiéval sombre, donjon, arcane
+   Activer : window.setTheme('rpg') | ?theme=rpg
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Cinzel', serif;
+  --lb-font-body:  'IM Fell English', serif;
+
+  /* Panel — donjon profond */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(14,9,28,0.97) 0%, rgba(8,5,17,0.97) 100%);
+  --lb-panel-border: rgba(201, 168, 76, 0.20);
+  --lb-panel-glow:   0 0 70px rgba(201,168,76,0.08), 0 44px 120px rgba(0,0,0,0.92), inset 0 1px 0 rgba(201,168,76,0.10);
+
+  /* Titre — or enchanté */
+  --lb-title-color:  #C9A84C;
+  --lb-title-shadow: 0 0 26px rgba(201,168,76,0.62), 0 0 58px rgba(255,160,0,0.22);
+
+  /* Avatar #1 — or légendaire */
+  --lb-av1-bg:     linear-gradient(135deg, #FFD54A, #B8860B);
+  --lb-av1-border: rgba(255, 200, 60, 0.55);
+  --lb-av1-shadow: 0 0 22px rgba(201,168,76,0.58), 0 0 55px rgba(255,160,0,0.18);
+
+  /* Avatar #2 — acier */
+  --lb-av2-bg:     linear-gradient(135deg, #d8d8d8, #929292);
+  --lb-av2-border: rgba(210, 210, 210, 0.38);
+  --lb-av2-shadow: 0 0 15px rgba(180,180,180,0.20);
+
+  /* Avatar #3 — cuivre antique */
+  --lb-av3-bg:     linear-gradient(135deg, #cd7f32, #8b4010);
+  --lb-av3-border: rgba(200, 121, 65, 0.42);
+  --lb-av3-shadow: 0 0 13px rgba(158,98,26,0.26);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #FFE566, #C9A84C);
+  --lb-badge1-color: #1A0A00;
+  --lb-badge2-bg:    linear-gradient(135deg, #E8E8E8, #9A9A9A);
+  --lb-badge2-color: #1a1a1a;
+  --lb-badge3-bg:    linear-gradient(135deg, #E09050, #7D4010);
+  --lb-badge3-color: #f5dfc0;
+
+  /* Noms podium */
+  --lb-pname1:  #C9A84C;
+  --lb-pname2:  #e8e8e8;
+  --lb-pname3:  #c8864a;
+  --lb-plevel1: rgba(201,168,76,0.72);
+  --lb-plevel2: rgba(230,230,230,0.50);
+  --lb-plevel3: rgba(200,134,74,0.52);
+
+  /* Piliers — pierres taillées */
+  --lb-pillar1-bg:   linear-gradient(180deg, #6B4A0A 0%, #3A2500 60%, #1A1000 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #4A4A4A 0%, #2A2A2A 60%, #111111 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #5A3510 0%, #2E1A06 60%, #110A00 100%);
+  --lb-pillar-shine: rgba(201,168,76,0.06);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(201,168,76,0.14);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(201,168,76,0.04);
+  --lb-row-border:      rgba(201,168,76,0.10);
+  --lb-row-rank:        #C9A84C;
+  --lb-row-name:        #F5E6C8;
+  --lb-row-level:       rgba(245,230,200,0.46);
+  --lb-row-empty-color: rgba(245,230,200,0.18);
+
+  /* Couronne — aura enchantée */
+  --lb-crown-filter: drop-shadow(0 0 10px rgba(255,200,0,0.95));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(255,200,0,0.95)); }
+  50% {
+    filter:
+      drop-shadow(0 0 18px rgba(255,220,0,1))
+      drop-shadow(0 0 36px rgba(201,168,76,0.62));
+  }
+}

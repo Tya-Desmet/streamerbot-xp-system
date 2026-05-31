@@ -1,0 +1,56 @@
+/* ============================================================
+   Card Thème TOKYO — Nuit de Shinjuku
+   Style : néon rose, bleu électrique, nuit urbaine japonaise
+   Activer : window.setTheme('tokyo') | ?theme=tokyo
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --accent:      #ff2d78;
+  --accent-dim:  rgba(255, 45, 120, 0.18);
+  --accent-glow: rgba(255, 45, 120, 0.56);
+  --bar-shine:   rgba(255, 100, 150, 0.50);
+
+  --card-bg:   rgba(5, 2, 15, 0.97);
+  --bar-track: rgba(255, 45, 120, 0.10);
+
+  --text-main: #ffe0f0;
+  --text-sub:  rgba(255, 45, 120, 0.62);
+
+  --font-title: 'Exo 2', sans-serif;
+  --font-body:  'Rajdhani', sans-serif;
+}
+
+/* Bordure rose néon + halo latéral */
+.card {
+  border-left:   3px solid #ff2d78 !important;
+  border-top:    1px solid rgba(255, 45, 120, 0.16) !important;
+  border-right:  1px solid rgba(255, 45, 120, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 45, 120, 0.08) !important;
+  background: rgba(5, 2, 15, 0.97) !important;
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.85),
+    -4px 0 28px rgba(255, 45, 120, 0.30),
+    inset 0 1px 0 rgba(255, 45, 120, 0.06) !important;
+}
+
+/* Barre XP : sombre → rose néon */
+.xp-fill {
+  background: linear-gradient(
+    90deg,
+    #5a0028 0%,
+    #cc0060 50%,
+    #ff2d78 100%
+  ) !important;
+  box-shadow: 0 0 10px rgba(255, 45, 120, 0.65) !important;
+}
+
+@keyframes flashAccentTokyo {
+  0%   { background: var(--card-bg); }
+  40%  { background: rgba(255, 45, 120, 0.12); }
+  100% { background: var(--card-bg); }
+}
+.card.flash {
+  animation: flashAccentTokyo 0.7s ease-out !important;
+}

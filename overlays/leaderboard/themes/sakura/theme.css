@@ -1,0 +1,82 @@
+/* ============================================================
+   Thème SAKURA — Fleurs de Cerisier
+   Style : rose doux, lavande, pêche — jardin printanier japonais
+   Activer : window.setTheme('sakura') | ?theme=sakura
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lato:wght@400;700&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Cormorant Garamond', serif;
+  --lb-font-body:  'Lato', sans-serif;
+
+  /* Panel — nuit de printemps, fond pourpre chaud */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(20,8,18,0.96) 0%, rgba(12,5,12,0.96) 100%);
+  --lb-panel-border: rgba(255, 143, 171, 0.22);
+  --lb-panel-glow:   0 0 70px rgba(255,100,140,0.08), 0 44px 120px rgba(0,0,0,0.90), inset 0 1px 0 rgba(255,143,171,0.08);
+
+  /* Titre — rose sakura pétale */
+  --lb-title-color:  #ffb7c5;
+  --lb-title-shadow: 0 0 22px rgba(255,143,171,0.62), 0 0 55px rgba(255,100,130,0.22);
+
+  /* Avatar #1 — rose cerisier */
+  --lb-av1-bg:     linear-gradient(135deg, #ff8fab, #d4507a);
+  --lb-av1-border: rgba(255, 143, 171, 0.60);
+  --lb-av1-shadow: 0 0 22px rgba(255,143,171,0.55), 0 0 55px rgba(220,80,120,0.18);
+
+  /* Avatar #2 — lavande douce */
+  --lb-av2-bg:     linear-gradient(135deg, #d4a0e0, #9060b0);
+  --lb-av2-border: rgba(212, 160, 224, 0.44);
+  --lb-av2-shadow: 0 0 15px rgba(180,120,210,0.32);
+
+  /* Avatar #3 — pêche corail */
+  --lb-av3-bg:     linear-gradient(135deg, #ffb3a0, #c86050);
+  --lb-av3-border: rgba(255, 160, 140, 0.40);
+  --lb-av3-shadow: 0 0 13px rgba(220,120,100,0.26);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #ffb7c5, #d4507a);
+  --lb-badge1-color: #200010;
+  --lb-badge2-bg:    linear-gradient(135deg, #d4a0e0, #9060b0);
+  --lb-badge2-color: #100020;
+  --lb-badge3-bg:    linear-gradient(135deg, #ffb3a0, #c05040);
+  --lb-badge3-color: #200008;
+
+  /* Noms podium */
+  --lb-pname1:  #ffb7c5;
+  --lb-pname2:  #d4b0e8;
+  --lb-pname3:  #ffb0a0;
+  --lb-plevel1: rgba(255,183,197,0.70);
+  --lb-plevel2: rgba(212,176,232,0.58);
+  --lb-plevel3: rgba(255,176,160,0.55);
+
+  /* Piliers — bois de cerisier sombre */
+  --lb-pillar1-bg:   linear-gradient(180deg, #6b1530 0%, #3a0818 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #4a2060 0%, #200a35 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #5a1525 0%, #2a0510 100%);
+  --lb-pillar-shine: rgba(255,143,171,0.08);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(255,143,171,0.14);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(255,143,171,0.04);
+  --lb-row-border:      rgba(255,143,171,0.10);
+  --lb-row-rank:        #ffb7c5;
+  --lb-row-name:        #ffe8ef;
+  --lb-row-level:       rgba(255,183,197,0.52);
+  --lb-row-empty-color: rgba(255,143,171,0.20);
+
+  /* Couronne — halo pétale */
+  --lb-crown-filter: drop-shadow(0 0 8px rgba(255,143,171,0.88));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,143,171,0.88)); }
+  50% {
+    filter:
+      drop-shadow(0 0 15px rgba(255,183,197,1))
+      drop-shadow(0 0 34px rgba(255,100,140,0.52));
+  }
+}

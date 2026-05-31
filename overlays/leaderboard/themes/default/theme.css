@@ -1,0 +1,83 @@
+/* ============================================================
+   Thème DEFAULT — Twitch Modern
+   Style : violet Twitch, typographie tech, surfaces sombres
+   Activer : window.setTheme('default') | ?theme=default
+   ============================================================ */
+
+/* Fonts additionnelles (Bebas Neue + Outfit déjà chargés dans le HTML) */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Orbitron', monospace;
+  --lb-font-body:  'Outfit', sans-serif;
+
+  /* Panel */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(10,5,22,0.97) 0%, rgba(6,3,14,0.97) 100%);
+  --lb-panel-border: rgba(145, 71, 255, 0.20);
+  --lb-panel-glow:   0 0 70px rgba(100,40,200,0.10), 0 44px 120px rgba(0,0,0,0.90), inset 0 1px 0 rgba(145,71,255,0.08);
+
+  /* Titre */
+  --lb-title-color:  #c39eff;
+  --lb-title-shadow: 0 0 22px rgba(145,71,255,0.55), 0 0 55px rgba(100,40,200,0.22);
+
+  /* Avatar #1 — violet Twitch */
+  --lb-av1-bg:     linear-gradient(135deg, #9147ff, #6420d6);
+  --lb-av1-border: rgba(145, 71, 255, 0.55);
+  --lb-av1-shadow: 0 0 22px rgba(145,71,255,0.50), 0 0 55px rgba(100,40,200,0.22);
+
+  /* Avatar #2 — argent */
+  --lb-av2-bg:     linear-gradient(135deg, #d8d8d8, #929292);
+  --lb-av2-border: rgba(210, 210, 210, 0.38);
+  --lb-av2-shadow: 0 0 15px rgba(180,180,180,0.22);
+
+  /* Avatar #3 — violet sombre */
+  --lb-av3-bg:     linear-gradient(135deg, #7b5ea7, #4a3080);
+  --lb-av3-border: rgba(145, 71, 255, 0.30);
+  --lb-av3-shadow: 0 0 13px rgba(100,60,180,0.28);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #9147ff, #6420d6);
+  --lb-badge1-color: #ffffff;
+  --lb-badge2-bg:    linear-gradient(135deg, #d8d8d8, #929292);
+  --lb-badge2-color: #1a1a1a;
+  --lb-badge3-bg:    linear-gradient(135deg, #7b5ea7, #4a3080);
+  --lb-badge3-color: #e8d5ff;
+
+  /* Noms podium */
+  --lb-pname1:  #c39eff;
+  --lb-pname2:  #e8e8e8;
+  --lb-pname3:  #b89de0;
+  --lb-plevel1: rgba(195,158,255,0.68);
+  --lb-plevel2: rgba(230,230,230,0.50);
+  --lb-plevel3: rgba(184,157,224,0.50);
+
+  /* Piliers */
+  --lb-pillar1-bg:   linear-gradient(180deg, #7b3fcf 0%, #4a1e8a 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #b0b0b0 0%, #606060 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #5a3d8a 0%, #2e1e50 100%);
+  --lb-pillar-shine: rgba(145,71,255,0.12);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(145,71,255,0.15);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(145,71,255,0.05);
+  --lb-row-border:      rgba(145,71,255,0.12);
+  --lb-row-rank:        #9147ff;
+  --lb-row-name:        #ffffff;
+  --lb-row-level:       rgba(255,255,255,0.44);
+  --lb-row-empty-color: rgba(255,255,255,0.18);
+
+  /* Couronne */
+  --lb-crown-filter: drop-shadow(0 0 6px rgba(145,71,255,0.85));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(145,71,255,0.85)); }
+  50% {
+    filter:
+      drop-shadow(0 0 14px rgba(180,120,255,1))
+      drop-shadow(0 0 32px rgba(145,71,255,0.55));
+  }
+}

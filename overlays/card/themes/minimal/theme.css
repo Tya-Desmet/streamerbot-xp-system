@@ -1,0 +1,56 @@
+/* ============================================================
+   Card Thème MINIMAL — Clean Esport
+   Style : sobre, blanc/gris, sans fioritures, lisibilité max
+   Activer : window.setTheme('minimal') | ?theme=minimal
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --accent:      #ffffff;
+  --accent-dim:  rgba(255, 255, 255, 0.14);
+  --accent-glow: rgba(255, 255, 255, 0.28);
+  --bar-shine:   rgba(255, 255, 255, 0.42);
+
+  --card-bg:   rgba(18, 20, 26, 0.97);
+  --bar-track: rgba(255, 255, 255, 0.10);
+
+  --text-main: #ffffff;
+  --text-sub:  rgba(255, 255, 255, 0.48);
+
+  --font-title: 'Inter', sans-serif;
+  --font-body:  'Inter', sans-serif;
+}
+
+/* Bordures très discrètes, pas de glow */
+.card {
+  border-left:   3px solid rgba(255, 255, 255, 0.70) !important;
+  border-top:    1px solid rgba(255, 255, 255, 0.08) !important;
+  border-right:  1px solid rgba(255, 255, 255, 0.06) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(18, 20, 26, 0.97) !important;
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.60),
+    -2px 0 12px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Barre XP : blanc pur, minimal */
+.xp-fill {
+  background: linear-gradient(
+    90deg,
+    #707070 0%,
+    #d0d0d0 55%,
+    #ffffff 100%
+  ) !important;
+  box-shadow: none !important;
+}
+
+@keyframes flashAccentMinimal {
+  0%   { background: var(--card-bg); }
+  40%  { background: rgba(255, 255, 255, 0.06); }
+  100% { background: var(--card-bg); }
+}
+.card.flash {
+  animation: flashAccentMinimal 0.6s ease-out !important;
+}

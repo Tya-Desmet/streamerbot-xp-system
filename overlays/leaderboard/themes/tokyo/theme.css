@@ -1,0 +1,82 @@
+/* ============================================================
+   Thème TOKYO — Nuit de Shinjuku
+   Style : néon rose vif, bleu électrique, jaune flash — nuit urbaine
+   Activer : window.setTheme('tokyo') | ?theme=tokyo
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Exo 2', sans-serif;
+  --lb-font-body:  'Rajdhani', sans-serif;
+
+  /* Panel — nuit quasi-noire, reflet rose */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(5,2,15,0.98) 0%, rgba(3,1,10,0.98) 100%);
+  --lb-panel-border: rgba(255, 45, 120, 0.22);
+  --lb-panel-glow:   0 0 70px rgba(255,45,120,0.10), 0 44px 120px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,45,120,0.08);
+
+  /* Titre — néon rose vif */
+  --lb-title-color:  #ff2d78;
+  --lb-title-shadow: 0 0 18px rgba(255,45,120,0.92), 0 0 55px rgba(255,0,80,0.38);
+
+  /* Avatar #1 — rose/magenta néon */
+  --lb-av1-bg:     linear-gradient(135deg, #ff2d78, #9b0045);
+  --lb-av1-border: rgba(255, 45, 120, 0.65);
+  --lb-av1-shadow: 0 0 22px rgba(255,45,120,0.62), 0 0 55px rgba(255,0,80,0.25);
+
+  /* Avatar #2 — bleu électrique */
+  --lb-av2-bg:     linear-gradient(135deg, #00e5ff, #005f80);
+  --lb-av2-border: rgba(0, 229, 255, 0.48);
+  --lb-av2-shadow: 0 0 15px rgba(0,229,255,0.38);
+
+  /* Avatar #3 — jaune néon */
+  --lb-av3-bg:     linear-gradient(135deg, #ffe600, #cc7700);
+  --lb-av3-border: rgba(255, 230, 0, 0.45);
+  --lb-av3-shadow: 0 0 13px rgba(255,210,0,0.32);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #ff2d78, #9b0045);
+  --lb-badge1-color: #ffffff;
+  --lb-badge2-bg:    linear-gradient(135deg, #00e5ff, #005f80);
+  --lb-badge2-color: #001820;
+  --lb-badge3-bg:    linear-gradient(135deg, #ffe600, #cc7700);
+  --lb-badge3-color: #1a0a00;
+
+  /* Noms podium */
+  --lb-pname1:  #ff2d78;
+  --lb-pname2:  #00e5ff;
+  --lb-pname3:  #ffe600;
+  --lb-plevel1: rgba(255,45,120,0.72);
+  --lb-plevel2: rgba(0,229,255,0.58);
+  --lb-plevel3: rgba(255,230,0,0.58);
+
+  /* Piliers — bâtiments sombres avec halo coloré */
+  --lb-pillar1-bg:   linear-gradient(180deg, #600020 0%, #280010 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #003d52 0%, #001520 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #504000 0%, #1a1200 100%);
+  --lb-pillar-shine: rgba(255,45,120,0.08);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(255,45,120,0.16);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(255,45,120,0.04);
+  --lb-row-border:      rgba(255,45,120,0.12);
+  --lb-row-rank:        #ff2d78;
+  --lb-row-name:        #ffe0f0;
+  --lb-row-level:       rgba(255,45,120,0.56);
+  --lb-row-empty-color: rgba(255,45,120,0.20);
+
+  /* Couronne — pulsation rose Tokyo */
+  --lb-crown-filter: drop-shadow(0 0 8px rgba(255,45,120,0.92));
+}
+
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,45,120,0.92)); }
+  50% {
+    filter:
+      drop-shadow(0 0 18px rgba(255,45,120,1))
+      drop-shadow(0 0 38px rgba(255,0,80,0.58));
+  }
+}
