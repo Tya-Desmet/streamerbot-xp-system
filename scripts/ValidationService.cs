@@ -82,7 +82,7 @@ public class ValidationService
     // GetGlobalVar retourne 0 si la clé n'existe pas — premier message toujours autorisé
     private bool IsOnCooldown(string username)
     {
-        var lastTime = _CPH.GetGlobalVar<long>($"cooldown_{username}", false);
+        var lastTime = _CPH.GetGlobalVar<long>("cooldown_" + username, false);
         var now      = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         return (now - lastTime) < _cooldownSeconds;
     }
@@ -90,7 +90,7 @@ public class ValidationService
     // Enregistre le timestamp Unix du dernier message valide
     private void SetCooldown(string username)
     {
-        _CPH.SetGlobalVar($"cooldown_{username}", DateTimeOffset.UtcNow.ToUnixTimeSeconds(), false);
+        _CPH.SetGlobalVar("cooldown_" + username, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), false);
     }
 
     private ValidationResult Accept()

@@ -14,17 +14,6 @@
 // RÈGLE DE RÉSOLUTION :
 //   Le titre retourné est celui dont MinLevel est le plus grand
 //   parmi ceux dont MinLevel ≤ niveau du viewer.
-//   Exemple : level 23, titres à 1/10/20/30 → titre MinLevel 20.
-//
-// UTILISATION DANS UNE ACTION :
-//   var projectPath = Path.GetDirectoryName(Path.GetDirectoryName(configPath));
-//   var title = new TitleService().GetTitle(user.Level, projectPath, config.Theme);
-//
-// FORMAT DU FICHIER titles.json :
-//   [
-//     { "minLevel": 1,  "title": "Nouveau venu" },
-//     { "minLevel": 10, "title": "Adepte" }
-//   ]
 //
 // AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
 // ============================================================
@@ -32,10 +21,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
 
-// Un palier de titre — correspond à une ligne dans titles.json
 public class TitleEntry
 {
     public int    MinLevel { get; set; }
@@ -44,99 +31,59 @@ public class TitleEntry
 
 public class TitleService
 {
-    // Point d'entrée principal — retourne toujours une chaîne non-nulle
     public string GetTitle(int level, string projectPath, string theme)
     {
         var titles = LoadTitles(projectPath, theme);
         return ResolveTitle(level, titles);
     }
 
-    // Charge la liste de titres selon la priorité configurée.
-    // Retourne la première source valide trouvée.
-    // Jamais null — fallback codé en dur en dernier recours.
     public List<TitleEntry> LoadTitles(string projectPath, string theme)
     {
-        // 1. configs/titles.json — surcharge utilisateur (priorité absolue)
-        var userPath = Path.Combine(projectPath, "configs", "titles.json");
-        var user     = TryLoadFile(userPath);
+        var user = TryLoadFile(Path.Combine(projectPath, "configs", "titles.json"));
         if (user != null) return user;
 
-        // 2. themes/{theme}/titles.json — titres spécifiques au thème courant
-        //    Ignoré si le thème est "default" (évite une double lecture)
         if (!string.IsNullOrEmpty(theme) &&
             !string.Equals(theme, "default", StringComparison.OrdinalIgnoreCase))
         {
-            var themePath  = Path.Combine(projectPath, "themes", theme, "titles.json");
-            var themeTitles = TryLoadFile(themePath);
-            if (themeTitles != null) return themeTitles;
+            var t = TryLoadFile(Path.Combine(projectPath, "themes", theme, "titles.json"));
+            if (t != null) return t;
         }
 
-        // 3. themes/default/titles.json — titres livrés par défaut avec le système
-        var defaultPath   = Path.Combine(projectPath, "themes", "default", "titles.json");
-        var defaultTitles = TryLoadFile(defaultPath);
-        if (defaultTitles != null) return defaultTitles;
+        var def = TryLoadFile(Path.Combine(projectPath, "themes", "default", "titles.json"));
+        if (def != null) return def;
 
-        // 4. Fallback codé en dur — le système ne peut jamais retourner un titre vide
-        return HardcodedFallback();
+        var fallback = new List<TitleEntry>();
+        fallback.Add(new TitleEntry { MinLevel = 1, Title = "Viewer" });
+        return fallback;
     }
 
-    // Résout le titre pour un niveau donné
-    // Tri DESC par MinLevel → premier dont MinLevel ≤ level
     private string ResolveTitle(int level, List<TitleEntry> titles)
     {
-        var candidates = titles
-            .Where(t => t.MinLevel >= 1 && !string.IsNullOrEmpty(t.Title))
-            .OrderByDescending(t => t.MinLevel)
-            .ToList();
-
-        foreach (var entry in candidates)
-            if (level >= entry.MinLevel)
-                return entry.Title;
-
-        // Si aucun palier n'est atteint (level < MinLevel le plus bas),
-        // retourner le titre du palier le plus bas disponible
-        var lowest = candidates.LastOrDefault();
-        return lowest != null ? lowest.Title : "";
+        var candidates = new List<TitleEntry>();
+        foreach (var t in titles)
+            if (t.MinLevel >= 1 && !string.IsNullOrEmpty(t.Title))
+                candidates.Add(t);
+        candidates.Sort((a, b) => b.MinLevel.CompareTo(a.MinLevel));
+        foreach (var e in candidates)
+            if (level >= e.MinLevel) return e.Title;
+        if (candidates.Count > 0)
+            return candidates[candidates.Count - 1].Title;
+        return "";
     }
 
-    // Tente de lire et valider un fichier titles.json
-    // Retourne null si :
-    //   - fichier absent
-    //   - JSON malformé
-    //   - liste vide
-    //   - aucune entrée avec MinLevel >= 1 et Title non-vide
     private List<TitleEntry> TryLoadFile(string path)
     {
         if (!File.Exists(path)) return null;
-
         try
         {
-            var json    = File.ReadAllText(path);
-            var entries = JsonConvert.DeserializeObject<List<TitleEntry>>(json);
-
+            var entries = JsonConvert.DeserializeObject<List<TitleEntry>>(File.ReadAllText(path));
             if (entries == null || entries.Count == 0) return null;
-
-            // Validation : au moins une entrée exploitable
-            var valid = entries
-                .Where(e => e.MinLevel >= 1 && !string.IsNullOrEmpty(e.Title))
-                .ToList();
-
+            var valid = new List<TitleEntry>();
+            foreach (var e in entries)
+                if (e.MinLevel >= 1 && !string.IsNullOrEmpty(e.Title))
+                    valid.Add(e);
             return valid.Count > 0 ? valid : null;
         }
-        catch
-        {
-            // JSON invalide → ignorer, passer au niveau suivant
-            return null;
-        }
-    }
-
-    // Fallback de sécurité — jamais exposé au viewer, sert uniquement à éviter
-    // une chaîne vide si les trois fichiers titles.json sont tous absents/invalides
-    private List<TitleEntry> HardcodedFallback()
-    {
-        return new List<TitleEntry>
-        {
-            new TitleEntry { MinLevel = 1, Title = "Viewer" }
-        };
+        catch { return null; }
     }
 }

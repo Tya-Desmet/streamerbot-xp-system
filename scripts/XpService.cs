@@ -16,7 +16,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 // Résultat retourné par AddXp — consommé par l'action Streamer.bot pour les overlays
 public class XpResult
@@ -32,10 +31,10 @@ public class XpResult
 // Progression XP dans le niveau actuel — profile cards, overlay barre XP
 public class XpProgress
 {
-    public int   CurrentXp    { get; set; }
-    public int   XpIntoLevel  { get; set; }
-    public int   XpForNext    { get; set; }
-    public float Percentage   { get; set; }
+    public int   CurrentXp   { get; set; }
+    public int   XpIntoLevel { get; set; }
+    public int   XpForNext   { get; set; }
+    public float Percentage  { get; set; }
 }
 
 // Entrée de leaderboard — overlay, export web, profile cards
@@ -54,28 +53,24 @@ public class XpService
 {
     private readonly UserRepository _repo;
 
-    public XpService(UserRepository repo)
-    {
-        _repo = repo;
-    }
+    public XpService(UserRepository repo) { _repo = repo; }
 
     // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
-    // Retourne null si l'utilisateur n'existe pas
-    public XpResult AddXp(string username, int amount)
+    // Inclut Messages++ et LastMessageTimestamp — une seule écriture disque
+    public XpResult AddXp(UserProfile user, int amount)
     {
-        var user = _repo.LoadUser(username);
         if (user == null) return null;
 
-        var oldLevel = user.Level;
-
-        user.Xp   += amount;
-        user.Level = CalculateLevel(user.Xp);
-
+        var oldLevel              = user.Level;
+        user.Xp                  += amount;
+        user.Level                = CalculateLevel(user.Xp);
+        user.Messages++;
+        user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         _repo.SaveUser(user);
 
         return new XpResult
         {
-            Username  = username,
+            Username  = user.Username,
             XpAdded   = amount,
             TotalXp   = user.Xp,
             OldLevel  = oldLevel,
@@ -91,13 +86,11 @@ public class XpService
     {
         if (user == null) return null;
 
-        var oldLevel = user.Level;
-
-        user.Xp                  += amount;
-        user.Level                = CalculateLevel(user.Xp);
-        user.WatchTime           += intervalMinutes;
-        user.LastWatchTimestamp   = nowSeconds;
-
+        var oldLevel             = user.Level;
+        user.Xp                 += amount;
+        user.Level               = CalculateLevel(user.Xp);
+        user.WatchTime          += intervalMinutes;
+        user.LastWatchTimestamp  = nowSeconds;
         _repo.SaveUser(user);
 
         return new XpResult
@@ -112,7 +105,6 @@ public class XpService
     }
 
     // Retourne la progression XP dans le niveau actuel
-    // Utilisé par : profile cards, overlay barre XP, export web
     public XpProgress GetProgress(UserProfile user)
     {
         var xpAtStart   = XpAtLevelStart(user.Level);
@@ -129,55 +121,49 @@ public class XpService
     }
 
     // Prépare le leaderboard — tri V2 : Level DESC → XP DESC → WatchTime DESC
-    // Aligné avec RankService.GetLiveRank() et LEADERBOARD_Update.cs
     public List<LeaderboardEntry> PrepareLeaderboard(List<UserProfile> users)
     {
-        return users
-            .OrderByDescending(u => u.Level)
-            .ThenByDescending(u => u.Xp)
-            .ThenByDescending(u => u.WatchTime)
-            .Select((u, index) => new LeaderboardEntry
+        users.Sort((a, b) => {
+            if (b.Level    != a.Level)    return b.Level.CompareTo(a.Level);
+            if (b.Xp       != a.Xp)       return b.Xp.CompareTo(a.Xp);
+            return b.WatchTime.CompareTo(a.WatchTime);
+        });
+
+        var result = new List<LeaderboardEntry>();
+        for (var i = 0; i < users.Count; i++)
+        {
+            var u = users[i];
+            result.Add(new LeaderboardEntry
             {
-                Rank        = index + 1,
+                Rank        = i + 1,
                 Username    = u.Username,
                 DisplayName = string.IsNullOrEmpty(u.DisplayName) ? u.Username : u.DisplayName,
                 Xp          = u.Xp,
                 Level       = u.Level,
                 WatchTime   = u.WatchTime
-            })
-            .ToList();
+            });
+        }
+        return result;
     }
 
-    // Calcule le niveau depuis le XP total accumulé
-    // Formule README : XP pour passer du niveau N au N+1 = 100 × N^1.5
     private int CalculateLevel(int totalXp)
     {
-        var level       = 1;
-        var accumulated = 0;
-
+        var level = 1; var acc = 0;
         while (true)
         {
             var threshold = XpForNextLevel(level);
-            if (accumulated + threshold > totalXp) break;
-            accumulated += threshold;
-            level++;
+            if (acc + threshold > totalXp) break;
+            acc += threshold; level++;
         }
-
         return level;
     }
 
-    // XP cumulé requis pour atteindre le début du niveau donné
     private int XpAtLevelStart(int level)
     {
-        var accumulated = 0;
-        for (var l = 1; l < level; l++)
-            accumulated += XpForNextLevel(l);
-        return accumulated;
+        var acc = 0;
+        for (var l = 1; l < level; l++) acc += XpForNextLevel(l);
+        return acc;
     }
 
-    // XP requis pour avancer du niveau N au niveau N+1 — formule README : 100 × N^1.5
-    private int XpForNextLevel(int level)
-    {
-        return (int)(100 * Math.Pow(level, 1.5));
-    }
+    private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }

@@ -27,8 +27,9 @@ var T_PANEL     =    0;
 var T_HEADER    =  120;
 var T_PODIUM    =  280;
 var T_LIST      = 2300;
-var DISPLAY     = 10000;
-var DISMISS_DUR =  460;
+var _lbUiParams = new URLSearchParams(window.location.search);
+var DISPLAY     = parseInt(_lbUiParams.get('display') || '10000', 10);
+var DISMISS_DUR = parseInt(_lbUiParams.get('dismiss') || '460',   10);
 
 var _timers = [];
 

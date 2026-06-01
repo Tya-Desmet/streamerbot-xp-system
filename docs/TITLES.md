@@ -39,8 +39,8 @@ Ouvrir le fichier :
 configs/titles.json
 ```
 
-Il contient par défaut un tableau vide `[]`.
-Tant qu'il est vide, le système utilise les titres ci-dessus.
+Il contient les titres par défaut (identiques à la table ci-dessus).
+Modifier directement ce fichier pour personnaliser vos titres.
 
 ---
 
@@ -140,7 +140,7 @@ Le système charge les titres dans cet ordre et s'arrête dès qu'une source val
 **En pratique :**
 - Pour tout personnaliser → utiliser `configs/titles.json`
 - Pour des titres par thème → utiliser `themes/{nom}/titles.json`
-- Pour revenir aux défauts → vider `configs/titles.json` (remettre `[]`)
+- Pour revenir aux défauts → restaurer les paliers de la table ci-dessus
 
 ---
 

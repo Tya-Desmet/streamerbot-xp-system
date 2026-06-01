@@ -1,6 +1,8 @@
 'use strict';
 
-var WS_URL = 'ws://127.0.0.1:8080/';
+var _params = new URLSearchParams(window.location.search);
+var _wsPort = _params.get('wsport') || '8080';
+var WS_URL  = 'ws://127.0.0.1:' + _wsPort + '/';
 
 function connectCardWS() {
   var ws = new WebSocket(WS_URL);

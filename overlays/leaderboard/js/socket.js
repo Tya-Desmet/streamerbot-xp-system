@@ -10,7 +10,9 @@
 //        (Settings → WebSocket → Port)
 // ============================================================
 
-var WS_URL = 'ws://127.0.0.1:8080/';
+var _lbParams = new URLSearchParams(window.location.search);
+var _lbPort   = _lbParams.get('wsport') || '8080';
+var WS_URL    = 'ws://127.0.0.1:' + _lbPort + '/';
 
 // Extrait les players depuis un message Streamer.bot
 // Gère tous les formats connus (direct, enveloppé, double-encodé)

@@ -95,11 +95,25 @@ public class Config
 
 public class ConfigService
 {
+    private readonly IInlineInvokeProxy _CPH;
+
+    public ConfigService(IInlineInvokeProxy CPH = null) { _CPH = CPH; }
+
     public Config LoadConfig(string path)
     {
         Config c = null;
         if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            try { c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path)); } catch { }
+        {
+            try
+            {
+                c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            }
+            catch (Exception ex)
+            {
+                if (_CPH != null)
+                    _CPH.LogWarn("[ConfigService] config.json invalide : " + ex.Message);
+            }
+        }
         c = c ?? new Config();
         ApplyDefaults(c);
         return c;

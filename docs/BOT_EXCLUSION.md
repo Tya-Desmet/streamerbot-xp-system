@@ -4,6 +4,18 @@ Le système d'exclusion empêche les bots et comptes techniques de polluer le cl
 
 ---
 
+## ⚠ COMPORTEMENT IMPORTANT — Liste de remplacement
+
+Le fichier `configs/excluded-users.json` **REMPLACE** la liste par défaut. Il ne l'étend pas.
+
+Si votre fichier contient `["monbot"]` uniquement,
+les bots standard (nightbot, streamelements...) **NE SONT PLUS exclus**.
+
+→ Toujours inclure les bots standard dans votre liste personnalisée.
+→ Voir `configs/EXCLUDED-USERS-README.md` pour la liste complète.
+
+---
+
 ## Fichier de configuration
 
 **Chemin :** `configs/excluded-users.json`

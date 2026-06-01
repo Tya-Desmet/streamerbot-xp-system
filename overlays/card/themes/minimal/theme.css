@@ -20,19 +20,19 @@
 
   --font-title: 'Inter', sans-serif;
   --font-body:  'Inter', sans-serif;
-}
 
-/* Bordures très discrètes, pas de glow */
-.card {
-  border-left:   3px solid rgba(255, 255, 255, 0.70) !important;
-  border-top:    1px solid rgba(255, 255, 255, 0.08) !important;
-  border-right:  1px solid rgba(255, 255, 255, 0.06) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  background: rgba(18, 20, 26, 0.97) !important;
-  box-shadow:
+  /* Override structure card */
+  --card-border-left:  3px solid rgba(255, 255, 255, 0.70);
+  --card-border-other: 1px solid rgba(255, 255, 255, 0.06);
+  --card-box-shadow:
     0 4px 32px rgba(0, 0, 0, 0.60),
     -2px 0 12px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Bordure top légèrement plus visible */
+.card {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Barre XP : blanc pur, minimal */
@@ -42,8 +42,8 @@
     #707070 0%,
     #d0d0d0 55%,
     #ffffff 100%
-  ) !important;
-  box-shadow: none !important;
+  );
+  box-shadow: none;
 }
 
 @keyframes flashAccentMinimal {
@@ -52,5 +52,5 @@
   100% { background: var(--card-bg); }
 }
 .card.flash {
-  animation: flashAccentMinimal 0.6s ease-out !important;
+  animation: flashAccentMinimal 0.6s ease-out;
 }

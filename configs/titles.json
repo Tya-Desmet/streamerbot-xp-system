@@ -1,1 +1,10 @@
-[]
+[
+  { "minLevel": 1,   "title": "Nouveau venu"            },
+  { "minLevel": 5,   "title": "Régulier"                },
+  { "minLevel": 10,  "title": "Adepte"                  },
+  { "minLevel": 20,  "title": "Compagnon du Stream"     },
+  { "minLevel": 30,  "title": "Vétéran"                 },
+  { "minLevel": 50,  "title": "Pilier de la communauté" },
+  { "minLevel": 75,  "title": "Légende"                 },
+  { "minLevel": 100, "title": "Icône"                   }
+]

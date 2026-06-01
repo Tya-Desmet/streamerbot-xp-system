@@ -20,56 +20,57 @@
 
   --font-title: 'Cinzel', serif;
   --font-body:  'IM Fell English', serif;
+
+  /* Override structure card */
+  --card-border-left:   2px solid var(--accent);
+  --card-border-other:  1px solid rgba(201, 168, 76, 0.22);
+  --card-border-radius: 4px;
+  --card-box-shadow:
+    0 4px 40px rgba(0, 0, 0, 0.72),
+    -2px 0 22px rgba(201, 168, 76, 0.22),
+    inset 0 1px 0 rgba(201, 168, 76, 0.08);
 }
 
-/* Cadre complet style fiche personnage — bordures sur tous les côtés */
+/* Fond gradient + bordure top renforcée (2px au lieu de 1px) */
 .card {
-  border-left:   2px solid var(--accent) !important;
-  border-right:  1px solid rgba(201, 168, 76, 0.22) !important;
-  border-top:    2px solid rgba(201, 168, 76, 0.52) !important;
-  border-bottom: 1px solid rgba(201, 168, 76, 0.22) !important;
-  border-radius: 4px !important;
   background: linear-gradient(
     135deg,
     rgba(18, 8, 35, 0.97) 0%,
     rgba(10, 5, 20, 0.97) 100%
-  ) !important;
-  box-shadow:
-    0 4px 40px rgba(0, 0, 0, 0.72),
-    -2px 0 22px rgba(201, 168, 76, 0.22),
-    inset 0 1px 0 rgba(201, 168, 76, 0.08) !important;
+  );
+  border-top: 2px solid rgba(201, 168, 76, 0.52);
 }
 
-/* Titre de guilde — italique doré, style classe RPG */
+/* Titre de guilde — italique doré */
 .card-title {
-  color: var(--accent) !important;
-  font-style: italic !important;
-  letter-spacing: 0.06em !important;
+  color: var(--accent);
+  font-style: italic;
+  letter-spacing: 0.06em;
   opacity: 0.9;
-  text-shadow: 0 0 10px rgba(201, 168, 76, 0.3) !important;
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
 }
 
 /* Tag rang : sceau doré */
 .rank-tag {
-  background: linear-gradient(135deg, #C9A84C, #7A5C00) !important;
-  color: #1A0A00 !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.08em !important;
+  background: linear-gradient(135deg, #C9A84C, #7A5C00);
+  color: #1A0A00;
+  font-weight: 900;
+  letter-spacing: 0.08em;
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.52),
-    0 0 6px rgba(201, 168, 76, 0.32) !important;
+    0 0 6px rgba(201, 168, 76, 0.32);
 }
 
 /* Niveau : glow arcane */
 .level-value {
   text-shadow:
     0 0 14px var(--accent-glow),
-    0 0 28px rgba(201, 168, 76, 0.22) !important;
+    0 0 28px rgba(201, 168, 76, 0.22);
 }
 
 /* Stats : couleur parchemin */
 .stat-value {
-  color: var(--text-main) !important;
+  color: var(--text-main);
 }
 
 /* Barre XP : dégradé arcane purple→gold→yellow */
@@ -79,20 +80,20 @@
     #6B3FA0 0%,
     #C9A84C 55%,
     #FFD060 100%
-  ) !important;
-  box-shadow: 0 0 10px rgba(201, 168, 76, 0.62) !important;
+  );
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.62);
 }
 
 /* XP current : teinte dorée */
 .xp-current {
-  color: var(--accent) !important;
+  color: var(--accent);
 }
 
 @keyframes flashAccentRPG {
-  0%   { background: var(--card-bg); }
+  0%   { background: rgba(18, 8, 35, 0.97); }
   40%  { background: rgba(201, 168, 76, 0.16); }
-  100% { background: var(--card-bg); }
+  100% { background: rgba(18, 8, 35, 0.97); }
 }
 .card.flash {
-  animation: flashAccentRPG 0.8s ease-out !important;
+  animation: flashAccentRPG 0.8s ease-out;
 }

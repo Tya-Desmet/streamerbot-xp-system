@@ -39,8 +39,36 @@ using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-// ----- UserProfile (source : scripts/UserRepository.cs) -----
 
+// ----- UserRepository (source : scripts/UserRepository.cs) -----
+
+// ============================================================
+// UserRepository.cs — Streamer.bot XP System
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Ce fichier est une référence source.
+//   Coller UserProfile + UserRepository au-dessus de CPHInline
+//   dans chaque action C# qui en a besoin.
+//
+// Exemple d'action Streamer.bot :
+//   [UserProfile class]
+//   [UserRepository class]
+//   public class CPHInline {
+//       public bool Execute() {
+//           var repo = new UserRepository(CPH.GetGlobalVar<string>("dataPath", true));
+//           ...
+//           return true;
+//       }
+//   }
+// ============================================================
+
+using System;
+using System.IO;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
+// Modèle utilisateur — structure exacte du JSON sur disque
+// Champs alignés avec /data/users/{username}.json (voir README)
 public class UserProfile
 {
     public string Username             { get; set; }
@@ -48,14 +76,14 @@ public class UserProfile
     public int    Xp                   { get; set; }
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
-    public int    WatchTime            { get; set; }
+    public int    WatchTime            { get; set; }   // minutes cumulées regardées
     public long   LastMessageTimestamp { get; set; }
-    public long   LastWatchTimestamp   { get; set; }
-    public int    WatchStreak          { get; set; }
+    public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
+    public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
 }
 
-// ----- UserRepository (source : scripts/UserRepository.cs) -----
-
+// Repository — lecture et écriture JSON uniquement
+// Aucune logique XP, aucune logique overlay, aucun calcul
 public class UserRepository
 {
     private readonly string _dataPath;
@@ -66,17 +94,50 @@ public class UserRepository
         Directory.CreateDirectory(_dataPath);
     }
 
-    public UserProfile LoadUser(string username)
+    // Vérifie si le fichier {username}.json existe
+    public bool UserExists(string username)
     {
-        var path = Path.Combine(_dataPath, username + ".json");
-        if (!File.Exists(path)) return null;
-        return JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(path));
+        return File.Exists(GetFilePath(username));
     }
 
+    // Crée un profil vierge pour un nouveau viewer
+    public UserProfile CreateUser(string username, string displayName = null)
+    {
+        var user = new UserProfile
+        {
+            Username             = username,
+            DisplayName          = displayName ?? username,
+            Xp                   = 0,
+            Level                = 1,
+            Messages             = 0,
+            WatchTime            = 0,
+            Rank                 = 0,
+            LastMessageTimestamp = 0,
+            LastWatchTimestamp   = 0,
+            WatchStreak          = 0
+        };
+
+        SaveUser(user);
+        return user;
+    }
+
+    // Charge le profil depuis le JSON — retourne null si introuvable
+    public UserProfile LoadUser(string username)
+    {
+        var path = GetFilePath(username);
+
+        if (!File.Exists(path))
+            return null;
+
+        var json = File.ReadAllText(path);
+        return JsonConvert.DeserializeObject<UserProfile>(json);
+    }
+
+    // Persiste le profil sur le disque
     public void SaveUser(UserProfile user)
     {
         var json    = JsonConvert.SerializeObject(user, Formatting.Indented);
-        var path    = Path.Combine(_dataPath, user.Username + ".json");
+        var path    = GetFilePath(user.Username);
         var tmpPath = path + ".tmp";
 
         try
@@ -94,16 +155,84 @@ public class UserRepository
             throw;
         }
     }
+
+    // Charge tous les profils du dossier — pour leaderboard, export, stats globales
+    public List<UserProfile> GetAllUsers()
+    {
+        var users = new List<UserProfile>();
+        var files = Directory.GetFiles(_dataPath, "*.json");
+
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".tmp")) continue;
+            try
+            {
+                var json = File.ReadAllText(file);
+                var user = JsonConvert.DeserializeObject<UserProfile>(json);
+                if (user != null) users.Add(user);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
+        }
+
+        return users;
+    }
+
+    private string GetFilePath(string username)
+    {
+        return Path.Combine(_dataPath, username + ".json");
+    }
 }
+
 
 // ----- ValidationService (source : scripts/ValidationService.cs) -----
 
+// ============================================================
+// ValidationService.cs — Streamer.bot XP System
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Coller ValidationResult + ValidationService au-dessus de CPHInline
+//   dans chaque action C# qui en a besoin.
+//   Passer CPH au constructeur pour la gestion du cooldown.
+//
+// Exemple d'action Streamer.bot :
+//   [ValidationResult class]
+//   [ValidationService class]
+//   public class CPHInline {
+//       public bool Execute() {
+//           var validation = new ValidationService(CPH, cooldownSeconds: 30, minLength: 2);
+//           var result = validation.ValidateMessage(userName, rawInput);
+//           if (!result.IsValid) { CPH.LogInfo($"Rejeté : {result.Reason}"); return true; }
+//           // continuer vers XP_Add, watchtime, etc.
+//           return true;
+//       }
+//   }
+// ============================================================
+
+using System;
+
+// Résultat de validation — IsValid + code raison pour logging et réactions futures
 public class ValidationResult
 {
     public bool   IsValid { get; set; }
     public string Reason  { get; set; }
+
+    // Raisons possibles : "command" | "too_short" | "cooldown" | ""
 }
 
+// Service de validation — anti-spam, cooldown, commandes, longueur
+// Aucune logique XP, aucune logique overlay
+// Réutilisable par : XP chat, watchtime, rewards, mini-jeux
 public class ValidationService
 {
     private readonly IInlineInvokeProxy _CPH;
@@ -117,61 +246,121 @@ public class ValidationService
         _minLength       = minLength;
     }
 
+    // Point d'entrée — valide un message de chat Twitch
     public ValidationResult ValidateMessage(string username, string message)
     {
-        if (IsCommand(message))     return Reject("command");
-        if (IsTooShort(message))    return Reject("too_short");
-        if (IsOnCooldown(username)) return Reject("cooldown");
+        if (IsCommand(message))
+            return Reject("command");
+
+        if (IsTooShort(message))
+            return Reject("too_short");
+
+        if (IsOnCooldown(username))
+            return Reject("cooldown");
+
         SetCooldown(username);
         return Accept();
     }
 
+    // Détecte les commandes Twitch (!command, /me, .color...)
     private bool IsCommand(string message)
     {
         if (string.IsNullOrWhiteSpace(message)) return true;
+
         var first = message.TrimStart()[0];
         return first == '!' || first == '/' || first == '.';
     }
 
-    private bool IsTooShort(string message) => message.Trim().Length < _minLength;
-
-    private bool IsOnCooldown(string username)
+    // Vérifie la longueur minimale après nettoyage des espaces
+    private bool IsTooShort(string message)
     {
-        var last = _CPH.GetGlobalVar<long>("cooldown_" + username, false);
-        return (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - last) < _cooldownSeconds;
+        return message.Trim().Length < _minLength;
     }
 
-    private void SetCooldown(string username)
-        => _CPH.SetGlobalVar("cooldown_" + username, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), false);
+    // Vérifie si l'utilisateur est encore en cooldown via Global Variables Streamer.bot
+    // GetGlobalVar retourne 0 si la clé n'existe pas — premier message toujours autorisé
+    private bool IsOnCooldown(string username)
+    {
+        var lastTime = _CPH.GetGlobalVar<long>("cooldown_" + username, false);
+        var now      = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        return (now - lastTime) < _cooldownSeconds;
+    }
 
-    private ValidationResult Accept()         => new ValidationResult { IsValid = true,  Reason = "" };
-    private ValidationResult Reject(string r) => new ValidationResult { IsValid = false, Reason = r };
+    // Enregistre le timestamp Unix du dernier message valide
+    private void SetCooldown(string username)
+    {
+        _CPH.SetGlobalVar("cooldown_" + username, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), false);
+    }
+
+    private ValidationResult Accept()
+        => new ValidationResult { IsValid = true, Reason = "" };
+
+    private ValidationResult Reject(string reason)
+        => new ValidationResult { IsValid = false, Reason = reason };
 }
+
 
 // ----- XpService (source : scripts/XpService.cs) -----
 
+// ============================================================
+// XpService.cs — Streamer.bot XP System
+// ============================================================
+// RÈGLE ABSOLUE : toute modification XP passe par AddXp()
+// Ce service ne déclenche jamais d'overlay, ne gère jamais OBS.
+//
+// Flux recommandé dans une action Streamer.bot :
+//   1. ValidationService.ValidateMessage()  → rejeter si invalide
+//   2. UserRepository.LoadUser()            → charger profil
+//   3. XpService.AddXp()                   → modifier XP + sauvegarder
+//   4. Lire XpResult.IsLevelUp             → déclencher overlay si besoin
+//
+// UTILISATION DANS STREAMER.BOT :
+//   Coller les 4 classes + XpService au-dessus de CPHInline.
+// ============================================================
+
+using System;
+using System.Collections.Generic;
+
+// Résultat retourné par AddXp — consommé par l'action Streamer.bot pour les overlays
 public class XpResult
 {
-    public int  XpAdded   { get; set; }
-    public int  TotalXp   { get; set; }
-    public int  OldLevel  { get; set; }
-    public int  NewLevel  { get; set; }
-    public bool IsLevelUp { get; set; }
+    public string Username  { get; set; }
+    public int    XpAdded   { get; set; }
+    public int    TotalXp   { get; set; }
+    public int    OldLevel  { get; set; }
+    public int    NewLevel  { get; set; }
+    public bool   IsLevelUp { get; set; }
 }
 
+// Progression XP dans le niveau actuel — profile cards, overlay barre XP
 public class XpProgress
 {
+    public int   CurrentXp   { get; set; }
     public int   XpIntoLevel { get; set; }
     public int   XpForNext   { get; set; }
     public float Percentage  { get; set; }
 }
 
+// Entrée de leaderboard — overlay, export web, profile cards
+public class LeaderboardEntry
+{
+    public int    Rank        { get; set; }
+    public string Username    { get; set; }
+    public string DisplayName { get; set; }
+    public int    Xp          { get; set; }
+    public int    Level       { get; set; }
+    public int    WatchTime   { get; set; }
+}
+
+// GATEWAY XP — aucune logique overlay, aucune logique OBS
 public class XpService
 {
     private readonly UserRepository _repo;
 
     public XpService(UserRepository repo) { _repo = repo; }
 
+    // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
+    // Inclut Messages++ et LastMessageTimestamp — une seule écriture disque
     public XpResult AddXp(UserProfile user, int amount)
     {
         if (user == null) return null;
@@ -185,6 +374,7 @@ public class XpService
 
         return new XpResult
         {
+            Username  = user.Username,
             XpAdded   = amount,
             TotalXp   = user.Xp,
             OldLevel  = oldLevel,
@@ -193,17 +383,71 @@ public class XpService
         };
     }
 
+    // GATEWAY WATCHTIME (V2) — variante optimisée pour les cycles watchtime
+    // Accepte le profil déjà chargé pour éviter un double accès disque.
+    // Met à jour XP, Level, WatchTime et LastWatchTimestamp en une seule écriture.
+    public XpResult AddWatchTimeXp(UserProfile user, int amount, int intervalMinutes, long nowSeconds)
+    {
+        if (user == null) return null;
+
+        var oldLevel             = user.Level;
+        user.Xp                 += amount;
+        user.Level               = CalculateLevel(user.Xp);
+        user.WatchTime          += intervalMinutes;
+        user.LastWatchTimestamp  = nowSeconds;
+        _repo.SaveUser(user);
+
+        return new XpResult
+        {
+            Username  = user.Username,
+            XpAdded   = amount,
+            TotalXp   = user.Xp,
+            OldLevel  = oldLevel,
+            NewLevel  = user.Level,
+            IsLevelUp = user.Level > oldLevel
+        };
+    }
+
+    // Retourne la progression XP dans le niveau actuel
     public XpProgress GetProgress(UserProfile user)
     {
         var xpAtStart   = XpAtLevelStart(user.Level);
         var xpForNext   = XpForNextLevel(user.Level);
         var xpIntoLevel = user.Xp - xpAtStart;
+
         return new XpProgress
         {
+            CurrentXp   = user.Xp,
             XpIntoLevel = xpIntoLevel,
             XpForNext   = xpForNext,
             Percentage  = xpForNext > 0 ? (float)xpIntoLevel / xpForNext * 100f : 0f
         };
+    }
+
+    // Prépare le leaderboard — tri V2 : Level DESC → XP DESC → WatchTime DESC
+    public List<LeaderboardEntry> PrepareLeaderboard(List<UserProfile> users)
+    {
+        users.Sort((a, b) => {
+            if (b.Level    != a.Level)    return b.Level.CompareTo(a.Level);
+            if (b.Xp       != a.Xp)       return b.Xp.CompareTo(a.Xp);
+            return b.WatchTime.CompareTo(a.WatchTime);
+        });
+
+        var result = new List<LeaderboardEntry>();
+        for (var i = 0; i < users.Count; i++)
+        {
+            var u = users[i];
+            result.Add(new LeaderboardEntry
+            {
+                Rank        = i + 1,
+                Username    = u.Username,
+                DisplayName = string.IsNullOrEmpty(u.DisplayName) ? u.Username : u.DisplayName,
+                Xp          = u.Xp,
+                Level       = u.Level,
+                WatchTime   = u.WatchTime
+            });
+        }
+        return result;
     }
 
     private int CalculateLevel(int totalXp)
@@ -228,7 +472,42 @@ public class XpService
     private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }
 
-// ----- Config (source : scripts/ConfigService.cs) -----
+
+// ----- ConfigService (source : scripts/ConfigService.cs) -----
+
+// ============================================================
+// ConfigService.cs — Streamer.bot XP System (V2)
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Coller tous les types Config + ConfigService au-dessus de CPHInline.
+//   Une seule Global Variable à définir dans Streamer.bot :
+//
+//     Nom     : xp_configPath
+//     Valeur  : C:\Users\TonNom\streamerbot-xp-system\configs\config.json
+//     Persist : oui
+//
+//   Puis dans Execute() :
+//     var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+//     var config     = new ConfigService().LoadConfig(configPath);
+//     // config.DataPath, config.Xp.PerMessage, config.Bots.BroadcasterName...
+//
+// STRUCTURE JSON :
+//   config.json utilise des sections imbriquées (nested).
+//   Newtonsoft.Json mappe automatiquement PascalCase C# ↔ camelCase JSON.
+//   Toute section absente du JSON est reconstruite avec les valeurs par défaut.
+//
+// FALLBACK :
+//   Si le fichier est absent ou malformé, LoadConfig retourne les valeurs
+//   par défaut sans lever d'exception. Les actions continuent normalement.
+//
+// AUCUNE logique métier — lecture et mapping uniquement
+// ============================================================
+
+using System;
+using System.IO;
+using Newtonsoft.Json;
+
+// ----- Sous-sections de config.json -----
 
 public class XpConfig
 {
@@ -274,6 +553,8 @@ public class DebugConfig
     public bool Verbose { get; set; }
 }
 
+// ----- Racine de config.json -----
+
 public class Config
 {
     public string            DataPath    { get; set; }
@@ -286,6 +567,8 @@ public class Config
     public BotsConfig        Bots        { get; set; }
     public DebugConfig       Debug       { get; set; }
 }
+
+// ----- Chargeur de configuration -----
 
 public class ConfigService
 {
@@ -347,6 +630,7 @@ public class ConfigService
         if (c.Debug == null) c.Debug = new DebugConfig();
     }
 }
+
 
 // ----- Action Streamer.bot -----
 
@@ -442,3 +726,4 @@ public class CPHInline
         return true;
     }
 }
+

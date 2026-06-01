@@ -31,7 +31,6 @@ public class UserProfile
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
     public int    WatchTime            { get; set; }
-    public int    Rank                 { get; set; }
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }
     public int    WatchStreak          { get; set; }
@@ -61,12 +60,24 @@ public class UserRepository
         var users = new List<UserProfile>();
         foreach (var file in Directory.GetFiles(_dataPath, "*.json"))
         {
+            if (file.EndsWith(".tmp")) continue;
             try
             {
                 var user = JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(file));
                 if (user != null) users.Add(user);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
         }
         return users;
     }
@@ -196,6 +207,7 @@ public class BotExclusionService
                 if (list != null)
                     foreach (var name in list)
                         if (!string.IsNullOrWhiteSpace(name)) _excluded[name.Trim()] = true;
+                // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
                 if (_excluded.Count > 0) return;
             }
             catch { }
@@ -313,11 +325,25 @@ public class Config
 
 public class ConfigService
 {
+    private readonly IInlineInvokeProxy _CPH;
+
+    public ConfigService(IInlineInvokeProxy CPH = null) { _CPH = CPH; }
+
     public Config LoadConfig(string path)
     {
         Config c = null;
         if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            try { c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path)); } catch { }
+        {
+            try
+            {
+                c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            }
+            catch (Exception ex)
+            {
+                if (_CPH != null)
+                    _CPH.LogWarn("[ConfigService] config.json invalide : " + ex.Message);
+            }
+        }
         c = c ?? new Config();
         ApplyDefaults(c);
         return c;
@@ -358,6 +384,21 @@ public class ConfigService
     }
 }
 
+public class LeaderboardCache
+{
+    public long              CachedAt { get; set; }
+    public List<CachedPlayer> Players  { get; set; }
+}
+
+public class CachedPlayer
+{
+    public int    rank     { get; set; }
+    public string username { get; set; }
+    public int    level    { get; set; }
+    public int    xp       { get; set; }
+    public string avatar   { get; set; }
+}
+
 // ----- Action Streamer.bot -----
 
 public class CPHInline
@@ -380,7 +421,7 @@ public class CPHInline
 
         // 2. Configuration + chemins
         var configPath  = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config      = new ConfigService().LoadConfig(configPath);
+        var config      = new ConfigService(CPH).LoadConfig(configPath);
         var configDir   = Path.GetDirectoryName(configPath ?? "");
         var projectPath = Path.GetDirectoryName(configDir ?? "");
 
@@ -413,6 +454,8 @@ public class CPHInline
 
         if (elapsed < config.Rank.CooldownSeconds)
         {
+            if (config.Debug.Verbose)
+                CPH.LogInfo("[RANK_ShowCommand] Skip cooldown pour : " + username);
             CPH.SetArgument("rank_skipped",  true);
             CPH.SetArgument("rank_sent",     false);
             CPH.SetArgument("rank_notfound", false);
@@ -440,19 +483,28 @@ public class CPHInline
             return true;
         }
 
-        // 6. Tous les profils — filtrés des exclusions pour le rang
-        var allUsers = repo.GetAllUsers();
-        var filtered = new List<UserProfile>();
-        foreach (var u in allUsers)
-            if (!bots.IsExcluded(u.Username))
-                filtered.Add(u);
-
-        var totalUsers   = filtered.Count;
+        // 6. Rang — cache leaderboard prioritaire, fallback scan complet
         var rankService  = new RankService();
         var xpService    = new XpService();
         var titleService = new TitleService();
 
-        var rank     = rankService.GetLiveRank(username, filtered);
+        var cacheJson  = CPH.GetGlobalVar<string>("xp_leaderboard_cache", false);
+        var maxAge     = (long)(config.Leaderboard.IntervalMinutes * 60 * 1.5);
+        var rank       = GetRankFromCache(username, cacheJson, maxAge);
+        var totalUsers = 0;
+
+        if (rank == 0)
+        {
+            CPH.LogInfo("[RANK_ShowCommand] Cache absent ou expire — scan complet");
+            var allUsers = repo.GetAllUsers();
+            var filtered = new List<UserProfile>();
+            foreach (var u in allUsers)
+                if (!bots.IsExcluded(u.Username))
+                    filtered.Add(u);
+
+            totalUsers = filtered.Count;
+            rank       = rankService.GetLiveRank(username, filtered);
+        }
         var progress = xpService.GetProgress(user);
         var title    = titleService.GetTitle(user.Level, projectPath, config.Theme);
 
@@ -474,5 +526,22 @@ public class CPHInline
         CPH.LogInfo("[RANK_ShowCommand] " + displayName + " -> Rang #" + rank + "/" + totalUsers + " Niv." + user.Level + " (" + title + ")");
 
         return true;
+    }
+
+    private static int GetRankFromCache(string username, string cacheJson, long maxAgeSeconds)
+    {
+        if (string.IsNullOrEmpty(cacheJson)) return 0;
+        try
+        {
+            var cache = JsonConvert.DeserializeObject<LeaderboardCache>(cacheJson);
+            if (cache == null || cache.Players == null) return 0;
+            var cacheAge = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - cache.CachedAt;
+            if (cacheAge > maxAgeSeconds) return 0;
+            foreach (var p in cache.Players)
+                if (string.Equals(p.username, username, StringComparison.OrdinalIgnoreCase))
+                    return p.rank;
+            return 0;
+        }
+        catch { return 0; }
     }
 }

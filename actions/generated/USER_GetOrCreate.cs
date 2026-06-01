@@ -31,8 +31,36 @@ using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-// ----- UserProfile (source : scripts/UserRepository.cs) -----
 
+// ----- UserRepository (source : scripts/UserRepository.cs) -----
+
+// ============================================================
+// UserRepository.cs — Streamer.bot XP System
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Ce fichier est une référence source.
+//   Coller UserProfile + UserRepository au-dessus de CPHInline
+//   dans chaque action C# qui en a besoin.
+//
+// Exemple d'action Streamer.bot :
+//   [UserProfile class]
+//   [UserRepository class]
+//   public class CPHInline {
+//       public bool Execute() {
+//           var repo = new UserRepository(CPH.GetGlobalVar<string>("dataPath", true));
+//           ...
+//           return true;
+//       }
+//   }
+// ============================================================
+
+using System;
+using System.IO;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
+// Modèle utilisateur — structure exacte du JSON sur disque
+// Champs alignés avec /data/users/{username}.json (voir README)
 public class UserProfile
 {
     public string Username             { get; set; }
@@ -40,14 +68,14 @@ public class UserProfile
     public int    Xp                   { get; set; }
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
-    public int    WatchTime            { get; set; }
+    public int    WatchTime            { get; set; }   // minutes cumulées regardées
     public long   LastMessageTimestamp { get; set; }
-    public long   LastWatchTimestamp   { get; set; }
-    public int    WatchStreak          { get; set; }
+    public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
+    public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
 }
 
-// ----- UserRepository (source : scripts/UserRepository.cs) -----
-
+// Repository — lecture et écriture JSON uniquement
+// Aucune logique XP, aucune logique overlay, aucun calcul
 public class UserRepository
 {
     private readonly string _dataPath;
@@ -58,19 +86,19 @@ public class UserRepository
         Directory.CreateDirectory(_dataPath);
     }
 
-    public UserProfile LoadUser(string username)
+    // Vérifie si le fichier {username}.json existe
+    public bool UserExists(string username)
     {
-        var path = Path.Combine(_dataPath, username + ".json");
-        if (!File.Exists(path)) return null;
-        return JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(path));
+        return File.Exists(GetFilePath(username));
     }
 
-    public UserProfile CreateUser(string username, string displayName)
+    // Crée un profil vierge pour un nouveau viewer
+    public UserProfile CreateUser(string username, string displayName = null)
     {
         var user = new UserProfile
         {
             Username             = username,
-            DisplayName          = displayName,
+            DisplayName          = displayName ?? username,
             Xp                   = 0,
             Level                = 1,
             Messages             = 0,
@@ -80,14 +108,28 @@ public class UserRepository
             LastWatchTimestamp   = 0,
             WatchStreak          = 0
         };
+
         SaveUser(user);
         return user;
     }
 
+    // Charge le profil depuis le JSON — retourne null si introuvable
+    public UserProfile LoadUser(string username)
+    {
+        var path = GetFilePath(username);
+
+        if (!File.Exists(path))
+            return null;
+
+        var json = File.ReadAllText(path);
+        return JsonConvert.DeserializeObject<UserProfile>(json);
+    }
+
+    // Persiste le profil sur le disque
     public void SaveUser(UserProfile user)
     {
         var json    = JsonConvert.SerializeObject(user, Formatting.Indented);
-        var path    = Path.Combine(_dataPath, user.Username + ".json");
+        var path    = GetFilePath(user.Username);
         var tmpPath = path + ".tmp";
 
         try
@@ -105,9 +147,72 @@ public class UserRepository
             throw;
         }
     }
+
+    // Charge tous les profils du dossier — pour leaderboard, export, stats globales
+    public List<UserProfile> GetAllUsers()
+    {
+        var users = new List<UserProfile>();
+        var files = Directory.GetFiles(_dataPath, "*.json");
+
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".tmp")) continue;
+            try
+            {
+                var json = File.ReadAllText(file);
+                var user = JsonConvert.DeserializeObject<UserProfile>(json);
+                if (user != null) users.Add(user);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
+        }
+
+        return users;
+    }
+
+    private string GetFilePath(string username)
+    {
+        return Path.Combine(_dataPath, username + ".json");
+    }
 }
 
+
 // ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
+
+// ============================================================
+// BotExclusionService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Charger et vérifier la liste des comptes exclus du système XP.
+//   Aucun exclu ne gagne d'XP, n'apparaît dans le leaderboard,
+//   ne peut afficher de profile card ni répondre à !rank.
+//
+// SOURCES D'EXCLUSION (priorité) :
+//   1. configs/excluded-users.json     ← liste personnalisée utilisateur
+//   2. Si config.excludeBroadcaster = true et config.broadcasterName renseigné
+//      → le streamer est automatiquement exclu
+//   3. Fallback codé en dur si le fichier JSON est absent ou vide
+//
+// COMPARAISON : insensible à la casse (OrdinalIgnoreCase)
+//   "NightBot", "nightbot", "NIGHTBOT" → même compte
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+using System;
+using System.IO;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 public class BotExclusionService
 {
@@ -144,14 +249,53 @@ public class BotExclusionService
             }
             catch { }
         }
-        _excluded["nightbot"] = true;     _excluded["streamelements"] = true;
-        _excluded["streamlabs"] = true;   _excluded["moobot"] = true;
-        _excluded["fossabot"] = true;     _excluded["wizebot"] = true;
-        _excluded["mixitupbot"] = true;   _excluded["streamerbot"] = true;
+        _excluded["nightbot"]      = true;
+        _excluded["streamelements"] = true;
+        _excluded["streamlabs"]    = true;
+        _excluded["moobot"]        = true;
+        _excluded["fossabot"]      = true;
+        _excluded["wizebot"]       = true;
+        _excluded["mixitupbot"]    = true;
+        _excluded["streamerbot"]   = true;
     }
 }
 
-// ----- Config (source : scripts/ConfigService.cs) -----
+
+// ----- ConfigService (source : scripts/ConfigService.cs) -----
+
+// ============================================================
+// ConfigService.cs — Streamer.bot XP System (V2)
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Coller tous les types Config + ConfigService au-dessus de CPHInline.
+//   Une seule Global Variable à définir dans Streamer.bot :
+//
+//     Nom     : xp_configPath
+//     Valeur  : C:\Users\TonNom\streamerbot-xp-system\configs\config.json
+//     Persist : oui
+//
+//   Puis dans Execute() :
+//     var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+//     var config     = new ConfigService().LoadConfig(configPath);
+//     // config.DataPath, config.Xp.PerMessage, config.Bots.BroadcasterName...
+//
+// STRUCTURE JSON :
+//   config.json utilise des sections imbriquées (nested).
+//   Newtonsoft.Json mappe automatiquement PascalCase C# ↔ camelCase JSON.
+//   Toute section absente du JSON est reconstruite avec les valeurs par défaut.
+//
+// FALLBACK :
+//   Si le fichier est absent ou malformé, LoadConfig retourne les valeurs
+//   par défaut sans lever d'exception. Les actions continuent normalement.
+//
+// AUCUNE logique métier — lecture et mapping uniquement
+// ============================================================
+
+using System;
+using System.IO;
+using Newtonsoft.Json;
+
+// ----- Sous-sections de config.json -----
 
 public class XpConfig
 {
@@ -197,6 +341,8 @@ public class DebugConfig
     public bool Verbose { get; set; }
 }
 
+// ----- Racine de config.json -----
+
 public class Config
 {
     public string            DataPath    { get; set; }
@@ -209,6 +355,8 @@ public class Config
     public BotsConfig        Bots        { get; set; }
     public DebugConfig       Debug       { get; set; }
 }
+
+// ----- Chargeur de configuration -----
 
 public class ConfigService
 {
@@ -271,6 +419,7 @@ public class ConfigService
     }
 }
 
+
 // ----- Action Streamer.bot -----
 
 public class CPHInline
@@ -316,7 +465,7 @@ public class CPHInline
         if (bots.IsExcluded(username))
         {
             CPH.SetArgument("user_excluded", true);
-            return true; // Silencieux — aucun profil créé, aucune erreur
+            return true;
         }
 
         CPH.SetArgument("user_excluded", false);
@@ -346,3 +495,4 @@ public class CPHInline
         return true;
     }
 }
+

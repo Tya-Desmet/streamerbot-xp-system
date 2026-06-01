@@ -20,34 +20,35 @@
 
   --font-title: 'Cormorant Garamond', serif;
   --font-body:  'Lato', sans-serif;
+
+  /* Override structure card */
+  --card-border-left:  3px solid #ff8fab;
+  --card-border-other: 1px solid rgba(255, 143, 171, 0.10);
+  --card-box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.65),
+    -3px 0 20px rgba(255, 143, 171, 0.22),
+    inset 0 1px 0 rgba(255, 183, 197, 0.06);
 }
 
-/* Bordure rose sakura, halo doux */
+/* Fond gradient sakura + bordure top légèrement plus visible */
 .card {
-  border-left:   3px solid #ff8fab !important;
-  border-top:    1px solid rgba(255, 143, 171, 0.18) !important;
-  border-right:  1px solid rgba(255, 143, 171, 0.10) !important;
-  border-bottom: 1px solid rgba(255, 143, 171, 0.10) !important;
   background: linear-gradient(
     135deg,
     rgba(25, 8, 22, 0.96) 0%,
     rgba(15, 5, 14, 0.96) 100%
-  ) !important;
-  box-shadow:
-    0 4px 32px rgba(0, 0, 0, 0.65),
-    -3px 0 20px rgba(255, 143, 171, 0.22),
-    inset 0 1px 0 rgba(255, 183, 197, 0.06) !important;
+  );
+  border-top: 1px solid rgba(255, 143, 171, 0.18);
 }
 
-/* Barre XP : fond sombre → rose sakura dégradé */
+/* Barre XP : fond sombre → rose sakura */
 .xp-fill {
   background: linear-gradient(
     90deg,
     #6a1535 0%,
     #c85080 55%,
     #ff8fab 100%
-  ) !important;
-  box-shadow: 0 0 10px rgba(255, 143, 171, 0.55) !important;
+  );
+  box-shadow: 0 0 10px rgba(255, 143, 171, 0.55);
 }
 
 @keyframes flashAccentSakura {
@@ -56,5 +57,5 @@
   100% { background: var(--card-bg); }
 }
 .card.flash {
-  animation: flashAccentSakura 0.75s ease-out !important;
+  animation: flashAccentSakura 0.75s ease-out;
 }

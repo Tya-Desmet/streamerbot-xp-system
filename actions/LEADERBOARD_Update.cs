@@ -35,7 +35,6 @@ public class UserProfile
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
     public int    WatchTime            { get; set; }
-    public int    Rank                 { get; set; }
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }
 }
@@ -57,12 +56,24 @@ public class UserRepository
         var users = new List<UserProfile>();
         foreach (var file in Directory.GetFiles(_dataPath, "*.json"))
         {
+            if (file.EndsWith(".tmp")) continue;
             try
             {
                 var user = JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(file));
                 if (user != null) users.Add(user);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
         }
         return users;
     }
@@ -100,6 +111,7 @@ public class BotExclusionService
                     foreach (var name in list)
                         if (!string.IsNullOrWhiteSpace(name))
                             _excluded[name.Trim()] = true;
+                // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
                 if (_excluded.Count > 0) return;
             }
             catch { }
@@ -222,11 +234,25 @@ public class Config
 
 public class ConfigService
 {
+    private readonly IInlineInvokeProxy _CPH;
+
+    public ConfigService(IInlineInvokeProxy CPH = null) { _CPH = CPH; }
+
     public Config LoadConfig(string path)
     {
         Config c = null;
         if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            try { c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path)); } catch { }
+        {
+            try
+            {
+                c = JsonConvert.DeserializeObject<Config>(File.ReadAllText(path));
+            }
+            catch (Exception ex)
+            {
+                if (_CPH != null)
+                    _CPH.LogWarn("[ConfigService] config.json invalide : " + ex.Message);
+            }
+        }
         c = c ?? new Config();
         ApplyDefaults(c);
         return c;
@@ -275,7 +301,7 @@ public class CPHInline
     {
         // 1. Configuration
         var configPath  = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config      = new ConfigService().LoadConfig(configPath);
+        var config      = new ConfigService(CPH).LoadConfig(configPath);
         var configDir   = Path.GetDirectoryName(configPath ?? "");
         var projectPath = Path.GetDirectoryName(configDir ?? "");
 
@@ -336,6 +362,11 @@ public class CPHInline
             @event  = "updateLeaderboard",
             players = payload
         }));
+
+        // Cache du classement en GlobalVar SB — lu par RANK et CARD
+        var cacheData = new { cachedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), players = payload };
+        CPH.SetGlobalVar("xp_leaderboard_cache", JsonConvert.SerializeObject(cacheData), false);
+        CPH.LogInfo("[LEADERBOARD_Update] Cache mis a jour — " + topPlayers.Count + " joueurs");
 
         // Log top 3
         var logCount = topPlayers.Count < 3 ? topPlayers.Count : 3;

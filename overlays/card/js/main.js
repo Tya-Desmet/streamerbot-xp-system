@@ -1,7 +1,8 @@
 'use strict';
 
-var DISPLAY_DURATION_MS = 8000;
-var dismissTimer = null;
+var _params             = new URLSearchParams(window.location.search);
+var DISPLAY_DURATION_MS = parseInt(_params.get('display') || '8000', 10);
+var dismissTimer        = null;
 
 function cancelDismiss() {
   if (dismissTimer !== null) {
@@ -28,8 +29,18 @@ window.showCard = function (data) {
   );
 
   cancelDismiss();
+
+  // Flash si la card est déjà visible (re-affichage), sinon animation d'entrée
+  var card = document.getElementById('card');
+  var isVisible = card && !card.classList.contains('hidden');
+
   populate(data);  // renderer.js
-  animateIn();     // animations.js
+
+  if (isVisible) {
+    flashCard();   // renderer.js — flash rapide sans ré-animer l'entrée
+  } else {
+    animateIn();   // animations.js
+  }
 
   dismissTimer = setTimeout(function () {
     window.hideCard();

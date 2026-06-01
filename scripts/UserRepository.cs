@@ -33,7 +33,6 @@ public class UserProfile
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
     public int    WatchTime            { get; set; }   // minutes cumulées regardées
-    public int    Rank                 { get; set; }
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
     public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
@@ -93,8 +92,24 @@ public class UserRepository
     // Persiste le profil sur le disque
     public void SaveUser(UserProfile user)
     {
-        var json = JsonConvert.SerializeObject(user, Formatting.Indented);
-        File.WriteAllText(GetFilePath(user.Username), json);
+        var json    = JsonConvert.SerializeObject(user, Formatting.Indented);
+        var path    = GetFilePath(user.Username);
+        var tmpPath = path + ".tmp";
+
+        try
+        {
+            File.WriteAllText(tmpPath, json);
+
+            if (File.Exists(path))
+                File.Delete(path);
+
+            File.Move(tmpPath, path);
+        }
+        catch (Exception ex)
+        {
+            try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
+            throw;
+        }
     }
 
     // Charge tous les profils du dossier — pour leaderboard, export, stats globales
@@ -105,13 +120,25 @@ public class UserRepository
 
         foreach (var file in files)
         {
+            if (file.EndsWith(".tmp")) continue;
             try
             {
                 var json = File.ReadAllText(file);
                 var user = JsonConvert.DeserializeObject<UserProfile>(json);
                 if (user != null) users.Add(user);
             }
-            catch { /* ignorer les fichiers malformés */ }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
         }
 
         return users;
@@ -119,6 +146,6 @@ public class UserRepository
 
     private string GetFilePath(string username)
     {
-        return Path.Combine(_dataPath, $"{username}.json");
+        return Path.Combine(_dataPath, username + ".json");
     }
 }

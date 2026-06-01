@@ -170,3 +170,48 @@ Les backslashs **doivent être doublés** dans JSON. Les chemins relatifs ne son
 ## Prise d'effet
 
 Modifier `config.json` prend effet au **prochain déclenchement** de chaque action — aucune recompilation nécessaire. Chaque action embarque sa propre copie de `ConfigService` qui relit le fichier à chaque exécution.
+
+---
+
+## Paramètres URL des overlays
+
+### card.html
+
+| Paramètre | Défaut | Description |
+|-----------|--------|-------------|
+| `?theme=` | `default` | Thème visuel (default, rpg, cyber, minimal, tokyo, sakura) |
+| `?wsport=` | `8080` | Port WebSocket de Streamer.bot |
+| `?display=` | `8000` | Durée d'affichage de la card en millisecondes |
+
+Exemple : `card.html?theme=rpg&wsport=8080&display=10000`
+
+### leaderboard.html
+
+| Paramètre | Défaut | Description |
+|-----------|--------|-------------|
+| `?theme=` | `default` | Thème visuel |
+| `?wsport=` | `8080` | Port WebSocket de Streamer.bot |
+| `?display=` | `10000` | Durée d'affichage du leaderboard en millisecondes |
+| `?dismiss=` | `460` | Durée de l'animation de fermeture en millisecondes |
+| `?dev` | absent | Mode développement avec données fictives |
+
+Exemple : `leaderboard.html?theme=cyber&wsport=9090&display=15000`
+
+**Dans OBS — Source Browser → URL :**
+```
+file:///C:/Stream/streamerbot-xp-system/overlays/card/card.html?wsport=8080&display=8000
+```
+
+---
+
+## Paramètre debug.verbose
+
+`"debug": { "verbose": true }` active les logs détaillés dans la console Streamer.bot.
+
+Logs ajoutés en mode verbose :
+- Raison de chaque skip de validation (cooldown, commande, trop court) — `XP_Add`
+- Skip du cycle watchtime (stream offline, watchtime désactivé) — `XP_WatchTime_V2`
+- Skip card pour compte bot exclu — `CARD_ShowProfile`
+- Skip cooldown `!rank` — `RANK_ShowCommand`
+
+Laisser `false` en production pour réduire le bruit dans les logs SB.

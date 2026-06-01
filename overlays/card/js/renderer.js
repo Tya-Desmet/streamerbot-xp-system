@@ -36,14 +36,18 @@ function setXpBar(current, forNext) {
 
   var ratio = forNext > 0 ? Math.min(current / forNext, 1) : 0;
 
-  // Reset sans transition pour repartir à zéro proprement
+  // Reset sans transition — supprimer la transition CSS
   fill.style.transition = 'none';
   fill.style.transform  = 'scaleX(0)';
-  void fill.offsetWidth;
 
-  // Active la transition et anime vers la valeur cible
-  fill.style.transition = '';
-  fill.style.transform  = 'scaleX(' + ratio.toFixed(4) + ')';
+  // Double rAF : attendre que le navigateur ait rendu la frame "reset"
+  // avant de réactiver la transition — pas de reflow synchrone
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      fill.style.transition = '';
+      fill.style.transform  = 'scaleX(' + ratio.toFixed(4) + ')';
+    });
+  });
 }
 
 // ---- Population principale ----
@@ -79,4 +83,21 @@ function populate(data) {
   // XP texte : "2450 / 3100 XP"
   setText('xp-current', formatXp(current));
   setText('xp-next',    formatXp(forNext) + ' XP');
+}
+
+// Flash de la card si déjà visible — double rAF, pas de reflow synchrone
+function flashCard() {
+  var card = document.getElementById('card');
+  if (!card) return;
+
+  card.classList.remove('flash');
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      card.classList.add('flash');
+      card.addEventListener('animationend', function onFlash() {
+        card.classList.remove('flash');
+        card.removeEventListener('animationend', onFlash);
+      });
+    });
+  });
 }
