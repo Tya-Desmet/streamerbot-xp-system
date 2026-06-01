@@ -1,0 +1,3 @@
+{
+  "_README": "Par défaut tous les sons sont SYNTHÉTISÉS (aucun fichier requis). Pour remplacer un son par ton propre fichier : dépose-le dans ./sounds/ puis ajoute une entrée ici, ex.  \"complete\": { \"src\": \"sounds/complete.mp3\", \"volume\": 0.9 }. Toute clé absente reste synthétisée. Clés utilisées par le CHECK-IN : appear (apparition), petal (remplissage de chaque case), complete (carte complète). Clés générales dispo : appear, petal, spark, fill, tick, levelup, milestone, complete, reveal. 'src' est relatif au dossier du thème. 'volume' = 0..1 (défaut 1)."
+}

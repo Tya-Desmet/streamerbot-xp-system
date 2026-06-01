@@ -52,7 +52,36 @@ window.hideCard = function () {
   animateOut(); // animations.js
 };
 
-var VALID_THEMES = ['default', 'rpg', 'cyber', 'minimal', 'tokyo', 'sakura'];
+var VALID_THEMES = ['default', 'rpg', 'cyber', 'minimal', 'tokyo', 'sakura', 'myastya-samourai'];
+
+// Thèmes embarquant un module d'effets (canvas pétales + étincelles + son).
+// Chargé/déchargé dynamiquement via themes/<theme>/effects.js.
+var EFFECTS_THEMES = ['myastya-samourai'];
+
+function currentThemeFromLink() {
+  var link = document.getElementById('theme-css');
+  var m = link && /themes\/([^/]+)\/theme\.css/.exec(link.getAttribute('href') || '');
+  return m ? m[1] : 'default';
+}
+
+function loadThemeEffects(theme) {
+  // Décharge proprement les effets du thème précédent (canvas, audio, listeners)
+  if (window.__themeFx && typeof window.__themeFx.destroy === 'function') {
+    try { window.__themeFx.destroy(); } catch (e) { /* noop */ }
+  }
+  window.__themeFx = null;
+
+  var old = document.getElementById('theme-js');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  if (EFFECTS_THEMES.indexOf(theme) === -1) return;
+
+  var s = document.createElement('script');
+  s.id  = 'theme-js';
+  s.src = 'themes/' + theme + '/effects.js';
+  s.onerror = function () { console.warn('[Card] effects.js introuvable pour', theme); };
+  document.body.appendChild(s);
+}
 
 window.setTheme = function (theme) {
   if (VALID_THEMES.indexOf(theme) === -1) {
@@ -66,6 +95,7 @@ window.setTheme = function (theme) {
   }
   link.href = 'themes/' + theme + '/theme.css';
   document.documentElement.setAttribute('data-theme', theme);
+  loadThemeEffects(theme);
   console.log('[Card] Thème :', theme);
 };
 
@@ -88,10 +118,11 @@ window.setTheme = function (theme) {
     console.log('[Card] DOM OK');
   }
 
-  // Thème depuis le paramètre URL (?theme=rpg)
+  // Thème depuis le paramètre URL (?theme=rpg), sinon celui déjà dans le <link>.
+  // On passe toujours par setTheme pour charger les effets éventuels du thème actif.
   var params   = new URLSearchParams(window.location.search);
   var urlTheme = params.get('theme');
-  if (urlTheme) window.setTheme(urlTheme);
+  window.setTheme(urlTheme || currentThemeFromLink());
 
   console.log('[Card] Prêt — en attente de Streamer.bot');
   console.log('[Card]    Thème : window.setTheme("rpg") | ?theme=cyber');

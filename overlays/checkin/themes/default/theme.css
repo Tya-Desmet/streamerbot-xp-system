@@ -1,0 +1,27 @@
+/* ============================================================
+   CheckIn Thème DEFAULT — Twitch Modern
+   Style : violet Twitch, tech, surfaces sombres
+   Activer : window.setTheme('default') | ?theme=default
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --ci-bg:             rgba(10, 5, 22, 0.96);
+  --ci-border-color:   #9147ff;
+  --ci-border-radius:  18px;
+  --ci-shadow:         0 8px 40px rgba(145, 71, 255, 0.35);
+  --ci-glow-complete:  rgba(240, 192, 64, 0.65);
+
+  --ci-accent:         #9147ff;
+  --ci-xp-color:       #f0c040;
+  --ci-complete-color: #f0c040;
+  --ci-header-color:   #6644bb;
+  --ci-label-color:    #7755cc;
+  --ci-text-main:      #ffffff;
+
+  --ci-box-filled:     #9147ff;
+
+  --ci-font-title: 'Orbitron', monospace;
+  --ci-font-body:  'Rajdhani', sans-serif;
+}

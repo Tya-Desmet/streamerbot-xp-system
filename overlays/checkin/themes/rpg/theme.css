@@ -1,0 +1,38 @@
+/* ============================================================
+   CheckIn Thème RPG — Fantasy Guild
+   Style : or mystique, médiéval sombre, fiche personnage
+   Activer : window.setTheme('rpg') | ?theme=rpg
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  --ci-bg:             rgba(10, 5, 18, 0.97);
+  --ci-border-color:   #C9A84C;
+  --ci-border-radius:  6px;
+  --ci-shadow:         0 4px 40px rgba(0, 0, 0, 0.72), 0 0 28px rgba(201, 168, 76, 0.20);
+  --ci-glow-complete:  rgba(255, 200, 60, 0.70);
+
+  --ci-accent:         #C9A84C;
+  --ci-xp-color:       #ffcc66;
+  --ci-complete-color: #FFD700;
+  --ci-header-color:   #7a6030;
+  --ci-label-color:    #8a6e38;
+  --ci-text-main:      #F5E6C8;
+
+  --ci-box-filled:     #C9A84C;
+
+  --ci-font-title: 'Cinzel', serif;
+  --ci-font-body:  'IM Fell English', serif;
+}
+
+/* Fond chaud et texture médiévale */
+#checkin-container {
+  background: linear-gradient(135deg, rgba(18, 8, 35, 0.97) 0%, rgba(10, 5, 20, 0.97) 100%);
+  border-top: 2px solid rgba(201, 168, 76, 0.52);
+}
+
+/* Icône dorée avec glow arcane */
+#checkin-icon {
+  text-shadow: 0 0 18px rgba(201, 168, 76, 0.80);
+}

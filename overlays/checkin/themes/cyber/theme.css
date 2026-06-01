@@ -1,0 +1,45 @@
+/* ============================================================
+   CheckIn Thème CYBER — Cyberpunk Neon
+   Style : cyan électrique, sombre, futuriste
+   Activer : window.setTheme('cyber') | ?theme=cyber
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --ci-bg:             rgba(4, 8, 18, 0.97);
+  --ci-border-color:   #00ffff;
+  --ci-border-radius:  4px;
+  --ci-shadow:         0 4px 32px rgba(0, 0, 0, 0.85), 0 0 32px rgba(0, 255, 255, 0.25);
+  --ci-glow-complete:  rgba(0, 255, 136, 0.70);
+
+  --ci-accent:         #00ffff;
+  --ci-xp-color:       #00ff88;
+  --ci-complete-color: #00ff88;
+  --ci-header-color:   #006666;
+  --ci-label-color:    #008888;
+  --ci-text-main:      #e0ffff;
+
+  --ci-box-filled:     #00ccdd;
+
+  --ci-font-title: 'Orbitron', monospace;
+  --ci-font-body:  'Rajdhani', sans-serif;
+}
+
+/* Fond sombre quasi-noir + bordure top subtile */
+#checkin-container {
+  border-top: 1px solid rgba(0, 255, 255, 0.18);
+}
+
+/* Icône cyan avec glow électrique */
+#checkin-icon {
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.90), 0 0 40px rgba(0, 200, 255, 0.40);
+}
+
+/* Cases remplies : gradient sombre → cyan */
+@keyframes ci-box-fill {
+  0%   { opacity: 0; transform: scale(0);    background: #004455; }
+  40%  { background: #00ffff; }
+  60%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1);    background: #00ccdd; }
+}

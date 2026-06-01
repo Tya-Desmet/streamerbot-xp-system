@@ -1,0 +1,51 @@
+/* ============================================================
+   CheckIn Thème TOKYO — Nuit de Shinjuku
+   Style : néon rose, bleu électrique, nuit urbaine japonaise
+   Activer : window.setTheme('tokyo') | ?theme=tokyo
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --ci-bg:             rgba(5, 2, 15, 0.97);
+  --ci-border-color:   #ff2d78;
+  --ci-border-radius:  14px;
+  --ci-shadow:         0 4px 32px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 45, 120, 0.28);
+  --ci-glow-complete:  rgba(0, 212, 255, 0.65);
+
+  --ci-accent:         #ff2d78;
+  --ci-xp-color:       #00d4ff;
+  --ci-complete-color: #00d4ff;
+  --ci-header-color:   #661133;
+  --ci-label-color:    #882244;
+  --ci-text-main:      #ffe0f0;
+
+  --ci-box-filled:     #ff2d78;
+
+  --ci-font-title: 'Exo 2', sans-serif;
+  --ci-font-body:  'Rajdhani', sans-serif;
+}
+
+/* Fond nuit profonde + bordure top subtile rose */
+#checkin-container {
+  border-top: 1px solid rgba(255, 45, 120, 0.18);
+}
+
+/* Icône rose néon */
+#checkin-icon {
+  text-shadow: 0 0 18px rgba(255, 45, 120, 0.90), 0 0 40px rgba(255, 0, 100, 0.40);
+}
+
+/* Cases : rose néon */
+@keyframes ci-box-fill {
+  0%   { opacity: 0; transform: scale(0);    background: #5a0028; }
+  50%  { background: #ff2d78; }
+  60%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1);    background: #ff2d78; }
+}
+
+/* Carte complète : bleu électrique */
+@keyframes ci-pulse {
+  0%, 100% { box-shadow: 0 8px 40px rgba(0, 212, 255, 0.45); }
+  50%       { box-shadow: 0 8px 65px rgba(0, 212, 255, 0.80); }
+}

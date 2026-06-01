@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Check-in Overlay</title>
+  <link rel="stylesheet" href="checkin.css">
+  <!-- Thème actif — JS peut changer dynamiquement via window.setTheme('rpg') -->
+  <!-- URL params : checkin.html?theme=rpg&wsport=8080&display=5000 -->
+  <link id="theme-css" rel="stylesheet" href="themes/default/theme.css">
+</head>
+<body>
+  <div id="checkin-container" class="hidden">
+    <div id="checkin-icon">✓</div>
+    <div id="checkin-header">CHECK-IN</div>
+    <div id="checkin-username"></div>
+    <div id="checkin-xp"></div>
+    <div id="checkin-progress">
+      <div id="checkin-boxes"></div>
+      <div id="checkin-progress-label"></div>
+    </div>
+    <div id="checkin-card-complete" class="hidden">★ CARTE COMPLÈTE ! ★</div>
+  </div>
+
+  <!-- Chargement séquentiel — chaque script est disponible pour le suivant -->
+  <script src="js/renderer.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/socket.js"></script>
+</body>
+</html>

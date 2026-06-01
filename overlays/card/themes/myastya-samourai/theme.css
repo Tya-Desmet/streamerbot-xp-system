@@ -1,0 +1,123 @@
+/* ============================================================
+   Card Thème MYASTYA-SAMOURAI — Sakura & Nuit Pourpre
+   Style : nuit indigo profonde, magenta cerisier, pétales & étincelles
+   Effets : canvas pétales + étincelles + son  (themes/myastya-samourai/effects.js)
+   Activer : window.setTheme('myastya-samourai') | ?theme=myastya-samourai
+   Couper le son : ?mute  |  window.sfx.mute()
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root {
+  /* Accent cerisier */
+  --accent:      #ff80aa;
+  --accent-dim:  rgba(255, 128, 170, 0.18);
+  --accent-glow: rgba(232, 96, 144, 0.55);
+  --bar-shine:   rgba(255, 184, 212, 0.55);
+
+  /* Fond nuit pourpre (palette de la cagnotte) */
+  --card-bg:   rgba(16, 9, 38, 0.96);
+  --bar-track: rgba(155, 75, 235, 0.12);
+
+  --text-main: #f4e6ff;
+  --text-sub:  rgba(255, 160, 200, 0.62);
+
+  --font-title: 'Shippori Mincho', serif;
+  --font-body:  'Noto Sans JP', sans-serif;
+
+  /* Override structure card */
+  --card-border-left:  3px solid #e86090;
+  --card-border-other: 1px solid rgba(155, 75, 235, 0.18);
+  --card-border-radius: 22px;
+  --card-box-shadow:
+    0 7px 48px rgba(0, 0, 0, 0.72),
+    -4px 0 30px rgba(232, 96, 144, 0.28),
+    0 0 0 1.5px rgba(155, 75, 235, 0.20),
+    inset 0 1px 0 rgba(255, 184, 212, 0.07);
+}
+
+/* Fond gradient indigo + liseré top pétale */
+.card {
+  /* position:relative → ancre la fleur décorative (.mys-flower) sur le coin de la card */
+  position: relative;
+  background: linear-gradient(
+    140deg,
+    #1c0e3c 0%,
+    #14092e 52%,
+    #100828 100%
+  );
+  border-top: 1px solid rgba(232, 96, 144, 0.22);
+}
+
+/* Liseré lumineux en haut de la barre (rappel cagnotte) */
+.xp-track::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 6%; right: 6%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(210,130,255,0.5) 35%, rgba(255,184,212,0.7) 50%, rgba(210,130,255,0.5) 65%, transparent);
+  z-index: 2;
+}
+
+/* Barre XP : nuit → magenta cerisier → blanc (dégradé de la cagnotte) */
+.xp-fill {
+  background-image:
+    linear-gradient(90deg, #5a0830 0%, #a01550 28%, #d93068 56%, #f06085 80%, #ffb8cc 95%, #ffffff 100%),
+    linear-gradient(to bottom, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.22) 100%);
+  background-blend-mode: normal, soft-light;
+  box-shadow: 0 0 12px rgba(232, 96, 144, 0.70), inset 0 1px 0 rgba(255,255,255,0.30);
+}
+
+/* Avatar — anneau cerisier */
+.avatar {
+  border-color: #e86090;
+  box-shadow: 0 0 22px rgba(232, 96, 144, 0.55), 0 0 48px rgba(155, 75, 235, 0.20);
+}
+
+.rank-tag {
+  background: linear-gradient(135deg, #ff80aa, #c83a64);
+  color: #ffffff;
+}
+
+/* Flash de re-affichage — keyframe propre au thème (consommée par effects.js via animationName) */
+@keyframes mys-flash {
+  0%   { background: linear-gradient(140deg, #1c0e3c 0%, #14092e 52%, #100828 100%); }
+  40%  { background: linear-gradient(140deg, #341a52 0%, #281044 52%, #1d0c3a 100%); }
+  100% { background: linear-gradient(140deg, #1c0e3c 0%, #14092e 52%, #100828 100%); }
+}
+.card.flash {
+  animation: mys-flash 0.7s ease-out;
+}
+
+/* ============================================================
+   Décor injecté par effects.js (pétales/étincelles/fleur)
+   Stylé ici pour rester cohérent avec le reste du thème.
+   ============================================================ */
+
+/* Canvas pétales + étincelles — plein cadre, au-dessus, non cliquable */
+.mys-fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* Fleur de cerisier décorative (SVG injecté) */
+.mys-flower {
+  position: fixed;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  z-index: 42;
+  filter:
+    drop-shadow(0 0 8px rgba(232, 96, 144, 0.75))
+    drop-shadow(0 0 22px rgba(180, 40, 90, 0.40))
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
+  animation: mys-sway 5s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes mys-sway {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}

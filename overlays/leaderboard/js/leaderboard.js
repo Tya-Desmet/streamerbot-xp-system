@@ -5,7 +5,34 @@
 // Usage : window.setTheme('rpg') | URL : ?theme=cyber
 // Depuis Streamer.bot : event setTheme + theme: "minimal"
 // ============================================================
-var VALID_THEMES = ['default', 'rpg', 'cyber', 'minimal', 'tokyo', 'sakura'];
+var VALID_THEMES = ['default', 'rpg', 'cyber', 'minimal', 'tokyo', 'sakura', 'myastya-samourai'];
+
+// Thèmes embarquant un module d'effets (canvas pétales + étincelles + son).
+var EFFECTS_THEMES = ['myastya-samourai'];
+
+function currentThemeFromLink() {
+  var link = document.getElementById('theme-css');
+  var m = link && /themes\/([^/]+)\/theme\.css/.exec(link.getAttribute('href') || '');
+  return m ? m[1] : 'default';
+}
+
+function loadThemeEffects(theme) {
+  if (window.__themeFx && typeof window.__themeFx.destroy === 'function') {
+    try { window.__themeFx.destroy(); } catch (e) { /* noop */ }
+  }
+  window.__themeFx = null;
+
+  var old = document.getElementById('theme-js');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  if (EFFECTS_THEMES.indexOf(theme) === -1) return;
+
+  var s = document.createElement('script');
+  s.id  = 'theme-js';
+  s.src = 'themes/' + theme + '/effects.js';
+  s.onerror = function () { console.warn('[LB] effects.js introuvable pour', theme); };
+  document.body.appendChild(s);
+}
 
 window.setTheme = function (theme) {
   if (VALID_THEMES.indexOf(theme) === -1) {
@@ -19,6 +46,7 @@ window.setTheme = function (theme) {
   }
   link.href = 'themes/' + theme + '/theme.css';
   document.documentElement.setAttribute('data-theme', theme);
+  loadThemeEffects(theme);
   console.log('[LB] 🎨 Thème :', theme);
 };
 
@@ -149,10 +177,11 @@ window.updateLeaderboard = function (payload) {
 
   e.panel.style.opacity = '0';
 
-  // Thème depuis l'URL (?theme=rpg) — doit être dans VALID_THEMES
+  // Thème depuis l'URL (?theme=rpg) — sinon celui déjà dans le <link>.
+  // Toujours via setTheme pour charger les effets éventuels du thème actif.
   var params = new URLSearchParams(window.location.search);
   var urlTheme = params.get('theme');
-  if (urlTheme) window.setTheme(urlTheme);
+  window.setTheme(urlTheme || currentThemeFromLink());
 
   // Dev mode : ?dev dans l'URL pour prévisualiser sans Streamer.bot
   // Données triées par Level DESC (ordre V2 — appliqué par le backend)

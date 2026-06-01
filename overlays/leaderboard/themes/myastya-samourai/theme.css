@@ -1,0 +1,120 @@
+/* ============================================================
+   Leaderboard Thème MYASTYA-SAMOURAI — Sakura & Nuit Pourpre
+   Style : nuit indigo, magenta cerisier, lavande — podium de printemps
+   Effets : canvas pétales + étincelles + son  (themes/myastya-samourai/effects.js)
+   Activer : window.setTheme('myastya-samourai') | ?theme=myastya-samourai
+   Couper le son : ?mute  |  window.sfx.mute()
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root {
+  /* Typographie */
+  --lb-font-title: 'Shippori Mincho', serif;
+  --lb-font-body:  'Noto Sans JP', sans-serif;
+
+  /* Panel — nuit pourpre profonde */
+  --lb-panel-bg:     linear-gradient(155deg, rgba(28,14,60,0.97) 0%, rgba(16,8,40,0.97) 55%, rgba(12,5,30,0.98) 100%);
+  --lb-panel-border: rgba(155, 75, 235, 0.24);
+  --lb-panel-glow:   0 0 70px rgba(232,96,144,0.10), 0 44px 120px rgba(0,0,0,0.92), 0 0 0 1px rgba(155,75,235,0.14), inset 0 1px 0 rgba(255,184,212,0.07);
+
+  /* Titre — pétale lumineux */
+  --lb-title-color:  #ffb8d4;
+  --lb-title-shadow: 0 0 24px rgba(232,96,144,0.62), 0 0 58px rgba(155,75,235,0.28);
+
+  /* Avatar #1 — cerisier magenta */
+  --lb-av1-bg:     linear-gradient(135deg, #ff80aa, #c83a64);
+  --lb-av1-border: rgba(255, 128, 170, 0.62);
+  --lb-av1-shadow: 0 0 24px rgba(232,96,144,0.55), 0 0 56px rgba(155,75,235,0.20);
+
+  /* Avatar #2 — lavande nuit */
+  --lb-av2-bg:     linear-gradient(135deg, #c4a0f0, #7a45c0);
+  --lb-av2-border: rgba(196, 160, 240, 0.46);
+  --lb-av2-shadow: 0 0 16px rgba(150,100,220,0.34);
+
+  /* Avatar #3 — rose pêche profond */
+  --lb-av3-bg:     linear-gradient(135deg, #f0809c, #9c2848);
+  --lb-av3-border: rgba(240, 128, 156, 0.42);
+  --lb-av3-shadow: 0 0 14px rgba(200,80,110,0.28);
+
+  /* Badges */
+  --lb-badge1-bg:    linear-gradient(135deg, #ffb8d4, #c83a64);
+  --lb-badge1-color: #2a0014;
+  --lb-badge2-bg:    linear-gradient(135deg, #c4a0f0, #7a45c0);
+  --lb-badge2-color: #14002a;
+  --lb-badge3-bg:    linear-gradient(135deg, #f0809c, #9c2848);
+  --lb-badge3-color: #28000e;
+
+  /* Noms podium */
+  --lb-pname1:  #ffb8d4;
+  --lb-pname2:  #d9c0ff;
+  --lb-pname3:  #ffb0c4;
+  --lb-plevel1: rgba(255,184,212,0.72);
+  --lb-plevel2: rgba(217,192,255,0.58);
+  --lb-plevel3: rgba(255,176,196,0.55);
+
+  /* Piliers — bois laqué nuit */
+  --lb-pillar1-bg:   linear-gradient(180deg, #7a1840 0%, #3a0820 100%);
+  --lb-pillar2-bg:   linear-gradient(180deg, #4a2078 0%, #200a40 100%);
+  --lb-pillar3-bg:   linear-gradient(180deg, #6a1838 0%, #2a0814 100%);
+  --lb-pillar-shine: rgba(255,184,212,0.09);
+
+  /* Séparateur */
+  --lb-sep-color: rgba(232,96,144,0.16);
+
+  /* Lignes 4-10 */
+  --lb-row-bg:          rgba(155,75,235,0.05);
+  --lb-row-border:      rgba(232,96,144,0.12);
+  --lb-row-rank:        #ffb8d4;
+  --lb-row-name:        #f4e6ff;
+  --lb-row-level:       rgba(255,184,212,0.52);
+  --lb-row-empty-color: rgba(255,160,200,0.20);
+
+  /* Couronne — halo pétale */
+  --lb-crown-filter: drop-shadow(0 0 8px rgba(232,96,144,0.88));
+}
+
+/* Titre — un peu plus serré pour le serif brush */
+.header h1 {
+  letter-spacing: 6px;
+}
+
+/* Couronne — glow magenta (override du keyframe de base) */
+@keyframes crownGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(232,96,144,0.88)); }
+  50% {
+    filter:
+      drop-shadow(0 0 16px rgba(255,184,212,1))
+      drop-shadow(0 0 36px rgba(155,75,235,0.55));
+  }
+}
+
+/* ============================================================
+   Décor injecté par effects.js
+   ============================================================ */
+.mys-fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.mys-flower {
+  position: fixed;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  z-index: 42;
+  filter:
+    drop-shadow(0 0 8px rgba(232, 96, 144, 0.75))
+    drop-shadow(0 0 22px rgba(180, 40, 90, 0.40))
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
+  animation: mys-sway 5s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes mys-sway {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}

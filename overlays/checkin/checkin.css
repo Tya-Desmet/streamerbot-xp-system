@@ -1,0 +1,227 @@
+/* ============================================================
+   checkin.css — Structure, layout, animations
+   Couleurs via variables CSS — voir overlays/checkin/themes/
+   Pour changer de thème : window.setTheme('rpg') | ?theme=rpg
+   ============================================================ */
+
+/* ===== Fallback variables (sans thème chargé) ===== */
+:root {
+  --ci-bg:             rgba(18, 18, 28, 0.96);
+  --ci-border-color:   #9147ff;
+  --ci-border-radius:  18px;
+  --ci-shadow:         0 8px 40px rgba(145, 71, 255, 0.35);
+  --ci-glow-complete:  rgba(240, 192, 64, 0.65);
+
+  --ci-accent:         #9147ff;
+  --ci-xp-color:       #f0c040;
+  --ci-complete-color: #f0c040;
+  --ci-header-color:   #555577;
+  --ci-label-color:    #776699;
+  --ci-text-main:      #ffffff;
+
+  --ci-box-filled:     #9147ff;
+
+  --ci-font-title: 'Segoe UI', sans-serif;
+  --ci-font-body:  'Segoe UI', sans-serif;
+}
+
+/* ===== Base ===== */
+
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: var(--ci-font-body);
+}
+
+/* ===== Container — centré, spring pop-in ===== */
+
+#checkin-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.75);
+  background: var(--ci-bg);
+  border: 2px solid var(--ci-border-color);
+  border-radius: var(--ci-border-radius);
+  padding: 24px 32px;
+  color: var(--ci-text-main);
+  min-width: 300px;
+  text-align: center;
+  opacity: 0;
+  box-shadow: var(--ci-shadow);
+  transition: opacity 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#checkin-container.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#checkin-container.hidden {
+  display: none;
+}
+
+/* ===== Icône ✓ — stamp ===== */
+
+#checkin-icon {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--ci-accent);
+  font-family: var(--ci-font-title);
+  margin-bottom: 6px;
+  opacity: 0;
+  transform: scale(0) rotate(-30deg);
+}
+
+#checkin-container.visible #checkin-icon {
+  animation: ci-stamp 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes ci-stamp {
+  0%   { opacity: 0; transform: scale(0)    rotate(-30deg); }
+  65%  { opacity: 1; transform: scale(1.25) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1)    rotate(0deg); }
+}
+
+/* ===== Header ===== */
+
+#checkin-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: var(--ci-header-color);
+  font-family: var(--ci-font-body);
+  margin-bottom: 8px;
+  opacity: 0;
+}
+
+#checkin-container.visible #checkin-header {
+  animation: ci-fade-up 0.35s ease 0.25s both;
+}
+
+/* ===== Username ===== */
+
+#checkin-username {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--ci-accent);
+  font-family: var(--ci-font-body);
+  margin-bottom: 4px;
+  opacity: 0;
+}
+
+#checkin-container.visible #checkin-username {
+  animation: ci-fade-up 0.4s ease 0.35s both;
+}
+
+@keyframes ci-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== XP — pop ===== */
+
+#checkin-xp {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--ci-xp-color);
+  font-family: var(--ci-font-title);
+  margin-bottom: 16px;
+  opacity: 0;
+}
+
+#checkin-container.visible #checkin-xp {
+  animation: ci-xp-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+}
+
+@keyframes ci-xp-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ===== Cases ===== */
+
+#checkin-boxes {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.checkin-box {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ci-accent);
+  border-radius: 5px;
+  background: transparent;
+}
+
+@keyframes ci-box-fill {
+  0%   { opacity: 0; transform: scale(0);    background: var(--ci-box-filled); }
+  60%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1);    background: var(--ci-box-filled); }
+}
+
+.checkin-box.filled {
+  background: transparent;
+  animation: ci-box-fill 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Délai échelonné : base 0.7s + 0.08s par case */
+.checkin-box:nth-child(1).filled  { animation-delay: 0.70s; }
+.checkin-box:nth-child(2).filled  { animation-delay: 0.78s; }
+.checkin-box:nth-child(3).filled  { animation-delay: 0.86s; }
+.checkin-box:nth-child(4).filled  { animation-delay: 0.94s; }
+.checkin-box:nth-child(5).filled  { animation-delay: 1.02s; }
+.checkin-box:nth-child(6).filled  { animation-delay: 1.10s; }
+.checkin-box:nth-child(7).filled  { animation-delay: 1.18s; }
+.checkin-box:nth-child(8).filled  { animation-delay: 1.26s; }
+.checkin-box:nth-child(9).filled  { animation-delay: 1.34s; }
+.checkin-box:nth-child(10).filled { animation-delay: 1.42s; }
+
+/* ===== Label progression ===== */
+
+#checkin-progress-label {
+  font-size: 0.75rem;
+  color: var(--ci-label-color);
+  font-family: var(--ci-font-body);
+  opacity: 0;
+}
+
+#checkin-container.visible #checkin-progress-label {
+  animation: ci-fade-up 0.35s ease 0.65s both;
+}
+
+/* ===== Carte complète ===== */
+
+#checkin-card-complete {
+  margin-top: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--ci-complete-color);
+  font-family: var(--ci-font-title);
+  letter-spacing: 2px;
+  animation: ci-shimmer 1.4s ease-in-out infinite;
+}
+
+#checkin-card-complete.hidden {
+  display: none;
+}
+
+@keyframes ci-shimmer {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+#checkin-container.card-complete {
+  border-color: var(--ci-complete-color);
+  animation: ci-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ci-pulse {
+  0%, 100% { box-shadow: 0 8px 40px var(--ci-glow-complete); }
+  50%       { box-shadow: 0 8px 65px var(--ci-glow-complete); }
+}

@@ -1,0 +1,51 @@
+/* ============================================================
+   CheckIn Thème MINIMAL — Clean Esport
+   Style : sobre, blanc/gris, sans fioritures, lisibilité max
+   Activer : window.setTheme('minimal') | ?theme=minimal
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --ci-bg:             rgba(18, 20, 26, 0.97);
+  --ci-border-color:   rgba(255, 255, 255, 0.65);
+  --ci-border-radius:  10px;
+  --ci-shadow:         0 4px 32px rgba(0, 0, 0, 0.60);
+  --ci-glow-complete:  rgba(255, 255, 255, 0.25);
+
+  --ci-accent:         #ffffff;
+  --ci-xp-color:       #ffffff;
+  --ci-complete-color: #ffffff;
+  --ci-header-color:   #555566;
+  --ci-label-color:    #666677;
+  --ci-text-main:      #ffffff;
+
+  --ci-box-filled:     #ffffff;
+
+  --ci-font-title: 'Inter', sans-serif;
+  --ci-font-body:  'Inter', sans-serif;
+}
+
+/* Bordure fine — style esport épuré */
+#checkin-container {
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+/* Pas de glow sur l'icône */
+#checkin-icon {
+  text-shadow: none;
+}
+
+/* Cases : blanc pur sans glow */
+@keyframes ci-box-fill {
+  0%   { opacity: 0; transform: scale(0);    background: #ffffff; }
+  60%  { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1);    background: #ffffff; }
+}
+
+/* Carte complète : pulsation subtile */
+@keyframes ci-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(255, 255, 255, 0.12); }
+  50%       { box-shadow: 0 4px 32px rgba(255, 255, 255, 0.22); }
+}

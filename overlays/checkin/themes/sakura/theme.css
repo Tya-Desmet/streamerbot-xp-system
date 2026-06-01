@@ -1,0 +1,46 @@
+/* ============================================================
+   CheckIn Thème SAKURA — Fleurs de Cerisier
+   Style : rose sakura doux, lavande, pêche — printemps japonais
+   Activer : window.setTheme('sakura') | ?theme=sakura
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Lato:wght@400;700&display=swap');
+
+:root {
+  --ci-bg:             rgba(20, 8, 18, 0.95);
+  --ci-border-color:   #ff8fab;
+  --ci-border-radius:  20px;
+  --ci-shadow:         0 4px 32px rgba(0, 0, 0, 0.65), 0 0 24px rgba(255, 143, 171, 0.20);
+  --ci-glow-complete:  rgba(255, 143, 171, 0.65);
+
+  --ci-accent:         #ff8fab;
+  --ci-xp-color:       #ffc8d8;
+  --ci-complete-color: #ffc8d8;
+  --ci-header-color:   #7a3050;
+  --ci-label-color:    #8a4060;
+  --ci-text-main:      #ffe8ef;
+
+  --ci-box-filled:     #ff8fab;
+
+  --ci-font-title: 'Cormorant Garamond', serif;
+  --ci-font-body:  'Lato', sans-serif;
+}
+
+/* Fond chaud rose-sombre + bordure top */
+#checkin-container {
+  background: linear-gradient(135deg, rgba(25, 8, 22, 0.96) 0%, rgba(15, 5, 14, 0.96) 100%);
+  border-top: 1px solid rgba(255, 143, 171, 0.22);
+}
+
+/* Icône sakura douce */
+#checkin-icon {
+  text-shadow: 0 0 14px rgba(255, 143, 171, 0.75);
+}
+
+/* Cases : dégradé fond sombre → rose sakura */
+@keyframes ci-box-fill {
+  0%   { opacity: 0; transform: scale(0);    background: #6a1535; }
+  50%  { background: #ff8fab; }
+  60%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1);    background: #ff8fab; }
+}
