@@ -77,6 +77,14 @@ $ActionDeps = @{
         "XpService",
         "ConfigService"
     )
+    "EXPORT_Snapshot" = @(
+        "UserRepository",
+        "XpService",
+        "TitleService",
+        "BotExclusionService",
+        "ConfigService",
+        "ExportService"
+    )
 }
 
 function Build-Action {

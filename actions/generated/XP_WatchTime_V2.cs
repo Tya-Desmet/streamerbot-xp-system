@@ -687,6 +687,19 @@ public class CheckInConfig
     public int    AnimationDurationMs { get; set; }
 }
 
+public class ExportConfig
+{
+    public bool?  Enabled       { get; set; }
+    public string Path          { get; set; }
+    public int    TopCount      { get; set; }
+    public bool?  WriteProfiles { get; set; }
+    public string Season        { get; set; }
+    public string StreamerName  { get; set; }
+    public bool?  PushEnabled   { get; set; }
+    public string PushUrl       { get; set; }
+    public string PushApiKey    { get; set; }
+}
+
 // ----- Racine de config.json -----
 
 public class Config
@@ -702,6 +715,7 @@ public class Config
     public DebugConfig       Debug       { get; set; }
     public RewardsConfig     Rewards     { get; set; }
     public CheckInConfig     CheckIn     { get; set; }
+    public ExportConfig      Export      { get; set; }
 }
 
 // ----- Chargeur de configuration -----
@@ -778,6 +792,17 @@ public class ConfigService
         if (c.CheckIn.XpCardComplete      <= 0)               c.CheckIn.XpCardComplete      = 100;
         if (c.CheckIn.CardSize            <= 0)               c.CheckIn.CardSize            = 10;
         if (c.CheckIn.AnimationDurationMs <= 0)               c.CheckIn.AnimationDurationMs = 5000;
+
+        if (c.Export == null) c.Export = new ExportConfig();
+        if (!c.Export.Enabled.HasValue)       c.Export.Enabled       = false;
+        if (c.Export.Path == null)            c.Export.Path          = "";
+        if (c.Export.TopCount <= 0)           c.Export.TopCount      = 50;
+        if (!c.Export.WriteProfiles.HasValue) c.Export.WriteProfiles = true;
+        if (string.IsNullOrEmpty(c.Export.Season)) c.Export.Season   = "all-time";
+        if (c.Export.StreamerName == null)    c.Export.StreamerName  = "";
+        if (!c.Export.PushEnabled.HasValue)   c.Export.PushEnabled   = false;
+        if (c.Export.PushUrl == null)         c.Export.PushUrl       = "";
+        if (c.Export.PushApiKey == null)      c.Export.PushApiKey    = "";
     }
 }
 

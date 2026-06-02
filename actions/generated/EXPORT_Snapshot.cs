@@ -4,30 +4,25 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : REWARD_GrantXp
+// ACTION : EXPORT_Snapshot (V3)
 // ============================================================
-// RÔLE : Octroyer un montant fixe d'XP à un viewer
-//         suite au rachat d'un Channel Point.
+// RÔLE : Lecture seule. Exporte les données du système XP vers
+//         des fichiers JSON (contrat V3) consommés par le hub web.
+//         Filtre les bots avant export. N'écrit aucun profil.
 //
 // INSTALLATION DANS STREAMER.BOT :
-//   1. Actions → Add Action → nommer "REWARD_GrantXp"
-//   2. Déclencheur : Twitch → Channel Point Redemption → "Bonus XP"
-//   3. Sub-Action 1 : Run Action → USER_GetOrCreate
-//   4. Sub-Action 2 : Execute C# Code → coller ce fichier
-//   5. Compiler et sauvegarder
+//   1. Actions → Add Action → nommer "EXPORT_Snapshot"
+//   2. Déclencheur : Timer (intervalle configurable, ex. 5 min)
+//      ⚠ Décaler de ~60s par rapport aux timers LEADERBOARD/WATCHTIME
+//   3. Sub-Action : Execute C# Code → coller actions/generated/EXPORT_Snapshot.cs
+//   4. Compiler et sauvegarder
 //
 // PRÉREQUIS :
 //   xp_configPath  string  Persistante : oui
+//   config.json → section "export" avec "enabled": true
 //
-// ARGUMENTS ENTRANTS :
-//   args["user_username"]   — login Twitch (posé par USER_GetOrCreate)
-//   args["user_excluded"]   — bool (posé par USER_GetOrCreate)
-//
-// ARGUMENTS SORTANTS :
-//   %reward_xp_granted%   int    — XP octroyé
-//   %reward_xp_total%     int    — XP total après ajout
-//   %reward_isLevelUp%    bool   — true si montée de niveau
-//   %reward_message%      string — message de confirmation envoyé
+// INOCUITÉ : si export.enabled != true → ne fait rien (return true).
+// LECTURE SEULE — aucune écriture de profil — aucune modification XP
 // ============================================================
 
 // ----- UserRepository (source : scripts/UserRepository.cs) -----
@@ -366,6 +361,163 @@ public class XpService
     private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }
 
+// ----- TitleService (source : scripts/TitleService.cs) -----
+
+// ============================================================
+// TitleService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Charger et résoudre les titres associés aux niveaux.
+//   Chaque niveau correspond au titre de la tranche dont il fait partie.
+//
+// ORDRE DE PRIORITÉ DU CHARGEMENT :
+//   1. configs/titles.json           ← surcharge utilisateur (priorité absolue)
+//   2. themes/{theme}/titles.json    ← titres du thème courant
+//   3. themes/default/titles.json    ← titres par défaut
+//   4. Fallback codé en dur          ← jamais en échec
+//
+// RÈGLE DE RÉSOLUTION :
+//   Le titre retourné est celui dont MinLevel est le plus grand
+//   parmi ceux dont MinLevel ≤ niveau du viewer.
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+
+public class TitleEntry
+{
+    public int    MinLevel { get; set; }
+    public string Title    { get; set; }
+}
+
+public class TitleService
+{
+    public string GetTitle(int level, string projectPath, string theme)
+    {
+        var titles = LoadTitles(projectPath, theme);
+        return ResolveTitle(level, titles);
+    }
+
+    public List<TitleEntry> LoadTitles(string projectPath, string theme)
+    {
+        var user = TryLoadFile(Path.Combine(projectPath, "configs", "titles.json"));
+        if (user != null) return user;
+
+        if (!string.IsNullOrEmpty(theme) &&
+            !string.Equals(theme, "default", StringComparison.OrdinalIgnoreCase))
+        {
+            var t = TryLoadFile(Path.Combine(projectPath, "themes", theme, "titles.json"));
+            if (t != null) return t;
+        }
+
+        var def = TryLoadFile(Path.Combine(projectPath, "themes", "default", "titles.json"));
+        if (def != null) return def;
+
+        var fallback = new List<TitleEntry>();
+        fallback.Add(new TitleEntry { MinLevel = 1, Title = "Viewer" });
+        return fallback;
+    }
+
+    private string ResolveTitle(int level, List<TitleEntry> titles)
+    {
+        var candidates = new List<TitleEntry>();
+        foreach (var t in titles)
+            if (t.MinLevel >= 1 && !string.IsNullOrEmpty(t.Title))
+                candidates.Add(t);
+        candidates.Sort((a, b) => b.MinLevel.CompareTo(a.MinLevel));
+        foreach (var e in candidates)
+            if (level >= e.MinLevel) return e.Title;
+        if (candidates.Count > 0)
+            return candidates[candidates.Count - 1].Title;
+        return "";
+    }
+
+    private List<TitleEntry> TryLoadFile(string path)
+    {
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var entries = JsonConvert.DeserializeObject<List<TitleEntry>>(File.ReadAllText(path));
+            if (entries == null || entries.Count == 0) return null;
+            var valid = new List<TitleEntry>();
+            foreach (var e in entries)
+                if (e.MinLevel >= 1 && !string.IsNullOrEmpty(e.Title))
+                    valid.Add(e);
+            return valid.Count > 0 ? valid : null;
+        }
+        catch { return null; }
+    }
+}
+
+// ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
+
+// ============================================================
+// BotExclusionService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Charger et vérifier la liste des comptes exclus du système XP.
+//   Aucun exclu ne gagne d'XP, n'apparaît dans le leaderboard,
+//   ne peut afficher de profile card ni répondre à !rank.
+//
+// SOURCES D'EXCLUSION (priorité) :
+//   1. configs/excluded-users.json     ← liste personnalisée utilisateur
+//   2. Si config.excludeBroadcaster = true et config.broadcasterName renseigné
+//      → le streamer est automatiquement exclu
+//   3. Fallback codé en dur si le fichier JSON est absent ou vide
+//
+// COMPARAISON : insensible à la casse (OrdinalIgnoreCase)
+//   "NightBot", "nightbot", "NIGHTBOT" → même compte
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+
+public class BotExclusionService
+{
+    private readonly Dictionary<string, bool> _excluded;
+
+    public BotExclusionService(string projectPath, string broadcasterName, bool excludeBroadcaster)
+    {
+        _excluded = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        Load(projectPath);
+        if (excludeBroadcaster && !string.IsNullOrEmpty(broadcasterName))
+            _excluded[broadcasterName.Trim()] = true;
+    }
+
+    public bool IsExcluded(string username)
+    {
+        if (string.IsNullOrEmpty(username)) return true;
+        return _excluded.ContainsKey(username.Trim());
+    }
+
+    private void Load(string projectPath)
+    {
+        var path = Path.Combine(projectPath, "configs", "excluded-users.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                var list = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(path));
+                if (list != null)
+                    foreach (var name in list)
+                        if (!string.IsNullOrWhiteSpace(name))
+                            _excluded[name.Trim()] = true;
+                // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
+                if (_excluded.Count > 0) return;
+            }
+            catch { }
+        }
+        _excluded["nightbot"]      = true;
+        _excluded["streamelements"] = true;
+        _excluded["streamlabs"]    = true;
+        _excluded["moobot"]        = true;
+        _excluded["fossabot"]      = true;
+        _excluded["wizebot"]       = true;
+        _excluded["mixitupbot"]    = true;
+        _excluded["streamerbot"]   = true;
+    }
+}
+
 // ----- ConfigService (source : scripts/ConfigService.cs) -----
 
 // ============================================================
@@ -581,63 +733,271 @@ public class ConfigService
     }
 }
 
+// ----- ExportService (source : scripts/ExportService.cs) -----
+
+// ============================================================
+// ExportService.cs — Streamer.bot XP System (V3)
+// ============================================================
+// RESPONSABILITÉ :
+//   Façonner les DTO publics (contrat V3) et les écrire en JSON
+//   de façon atomique (.tmp → move).
+//   NE CALCULE RIEN : XP, niveau, rang, titre, progression sont
+//   calculés en amont par XpService / TitleService et passés ici.
+//   NE LIT JAMAIS le disque.
+//
+// UTILISATION (dans EXPORT_Snapshot) :
+//   var exp = new ExportService();
+//   var dir = exp.ResolveExportDir(config.Export.Path, projectPath);
+//   exp.WriteJson(Path.Combine(dir, "meta.json"),
+//                 exp.BuildMeta(1, now, config.Export.Season, config.Export.StreamerName));
+//
+// MAPPING JSON :
+//   Propriétés DTO en minuscules → JSON minuscule lisible par le hub web.
+//   Aucun champ sensible (timestamps internes, chemins disque) n'est exporté.
+//
+// AUCUNE logique XP — AUCUN overlay — AUCUNE lecture disque
+// ============================================================
+
+
+// ----- DTO publics — forme = contrat V3 (docs/EXPORT_CONTRACT.md) -----
+
+// Profil public exporté — exports/users/{username}.json
+// Champs d'AFFICHAGE uniquement. Aucun timestamp interne, aucun chemin disque.
+public class PublicProfile
+{
+    public string username    { get; set; }
+    public string displayName { get; set; }
+    public int    level       { get; set; }
+    public int    xp          { get; set; }
+    public int    xpIntoLevel { get; set; }
+    public int    xpForNext   { get; set; }
+    public int    percentage  { get; set; }
+    public int    rank        { get; set; }
+    public string title       { get; set; }
+    public int    messages    { get; set; }
+    public int    watchTime   { get; set; }
+    public int    watchStreak { get; set; }
+    public PublicSources sources { get; set; }
+}
+
+public class PublicSources
+{
+    public int chat    { get; set; }
+    public int watch   { get; set; }
+    public int rewards { get; set; }
+}
+
+// Entrée leaderboard public — exports/leaderboard.json → players[]
+public class PublicLeaderboardEntry
+{
+    public int    rank        { get; set; }
+    public string username    { get; set; }
+    public string displayName { get; set; }
+    public int    level       { get; set; }
+    public int    xp          { get; set; }
+    public int    watchTime   { get; set; }
+    public string title       { get; set; }
+}
+
+// ----- Service d'export — façonnage + écriture JSON atomique -----
+
+public class ExportService
+{
+    // Résout le dossier d'export. configuredPath vide → projectPath/exports.
+    public string ResolveExportDir(string configuredPath, string projectPath)
+    {
+        if (!string.IsNullOrEmpty(configuredPath)) return configuredPath;
+        return Path.Combine(projectPath ?? "", "exports");
+    }
+
+    // Construit une entrée leaderboard publique à partir d'une LeaderboardEntry
+    // (déjà rangée par XpService.PrepareLeaderboard) + son titre résolu.
+    public PublicLeaderboardEntry BuildLeaderboardEntry(LeaderboardEntry e, string title)
+    {
+        return new PublicLeaderboardEntry
+        {
+            rank        = e.Rank,
+            username    = e.Username,
+            displayName = e.DisplayName,
+            level       = e.Level,
+            xp          = e.Xp,
+            watchTime   = e.WatchTime,
+            title       = title ?? ""
+        };
+    }
+
+    // Construit un profil public à partir du profil interne + données calculées.
+    public PublicProfile BuildPublicProfile(UserProfile u, XpProgress p, int rank, string title)
+    {
+        return new PublicProfile
+        {
+            username    = u.Username,
+            displayName = string.IsNullOrEmpty(u.DisplayName) ? u.Username : u.DisplayName,
+            level       = u.Level,
+            xp          = u.Xp,
+            xpIntoLevel = p != null ? p.XpIntoLevel : 0,
+            xpForNext   = p != null ? p.XpForNext   : 0,
+            percentage  = p != null ? (int)p.Percentage : 0,
+            rank        = rank,
+            title       = title ?? "",
+            messages    = u.Messages,
+            watchTime   = u.WatchTime,
+            watchStreak = u.WatchStreak,
+            sources     = new PublicSources
+            {
+                chat    = u.XpFromChat,
+                watch   = u.XpFromWatch,
+                rewards = u.XpFromRewards
+            }
+        };
+    }
+
+    // Construit l'objet meta.json.
+    public object BuildMeta(int schemaVersion, long nowSeconds, string season, string streamerName)
+    {
+        return new
+        {
+            schemaVersion = schemaVersion,
+            generatedAt   = nowSeconds,
+            season        = string.IsNullOrEmpty(season) ? "all-time" : season,
+            streamer      = new { name = streamerName ?? "" }
+        };
+    }
+
+    // Construit l'objet leaderboard.json à partir d'entrées publiques déjà construites.
+    public object BuildLeaderboardFile(List<PublicLeaderboardEntry> players, long nowSeconds, string season)
+    {
+        return new
+        {
+            generatedAt = nowSeconds,
+            season      = string.IsNullOrEmpty(season) ? "all-time" : season,
+            players     = players
+        };
+    }
+
+    // Écriture atomique d'un objet en JSON indenté. Crée le dossier parent.
+    // Retourne true si succès, false sinon (ne lève jamais).
+    public bool WriteJson(string filePath, object payload)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+            var json    = JsonConvert.SerializeObject(payload, Formatting.Indented);
+            var tmpPath = filePath + ".tmp";
+
+            File.WriteAllText(tmpPath, json);
+            if (File.Exists(filePath)) File.Delete(filePath);
+            File.Move(tmpPath, filePath);
+            return true;
+        }
+        catch
+        {
+            try { if (File.Exists(filePath + ".tmp")) File.Delete(filePath + ".tmp"); } catch { }
+            return false;
+        }
+    }
+}
+
 // ----- Action Streamer.bot -----
 
 public class CPHInline
 {
     public bool Execute()
     {
-        // 1. Vérifier exclusion
-        var excluded = args.ContainsKey("user_excluded")
-                       && args["user_excluded"] != null
-                       && (bool)args["user_excluded"] == true;
-        if (excluded) return true;
+        // 1. Configuration
+        var configPath  = CPH.GetGlobalVar<string>("xp_configPath", true);
+        var config      = new ConfigService(CPH).LoadConfig(configPath);
+        var configDir   = Path.GetDirectoryName(configPath ?? "");
+        var projectPath = Path.GetDirectoryName(configDir ?? "");
 
-        // 2. Username
-        if (!args.ContainsKey("user_username") || args["user_username"] == null)
+        // 2. Garde-fou d'inocuité — désactivé par défaut
+        if (config.Export == null || config.Export.Enabled != true)
         {
-            CPH.LogWarn("[REWARD_GrantXp] user_username absent — USER_GetOrCreate requis");
-            return false;
-        }
-        var username = args["user_username"].ToString();
-
-        // 3. Configuration
-        var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config     = new ConfigService(CPH).LoadConfig(configPath);
-
-        if (config.Rewards.GrantXpEnabled != true)
-        {
-            CPH.LogInfo("[REWARD_GrantXp] Feature desactivee dans config.json");
-            CPH.SetArgument("reward_xp_granted", 0);
+            CPH.LogInfo("[EXPORT_Snapshot] export.enabled=false — aucun export (no-op)");
+            CPH.SetArgument("export_enabled", false);
             return true;
         }
 
-        // 4. Charger profil
-        var repo = new UserRepository(config.DataPath);
-        var user = repo.LoadUser(username);
-
-        if (user == null)
+        if (string.IsNullOrEmpty(config.DataPath))
         {
-            CPH.LogWarn("[REWARD_GrantXp] Profil introuvable pour '" + username + "'");
+            CPH.LogWarn("[EXPORT_Snapshot] dataPath non configuré — export annulé");
             return false;
         }
 
-        // 5. Octroyer XP
-        var xpService = new XpService(repo);
-        var xpResult  = xpService.AddXp(user, config.Rewards.GrantXpAmount, "reward");
+        var exp       = new ExportService();
+        var exportDir = exp.ResolveExportDir(config.Export.Path, projectPath);
+        var now       = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var season    = config.Export.Season;
 
-        // 6. Message chat
-        var displayName = string.IsNullOrEmpty(user.DisplayName) ? username : user.DisplayName;
-        var message     = "@" + displayName + " — Bonus XP ! +" + config.Rewards.GrantXpAmount + " XP PogChamp";
+        // 3. Charger + filtrer (lecture seule)
+        var repo     = new UserRepository(config.DataPath);
+        var allUsers = repo.GetAllUsers();
 
-        CPH.SendMessage(message);
-        CPH.LogInfo("[REWARD_GrantXp] " + username + " — +" + config.Rewards.GrantXpAmount + " XP");
+        var bots = new BotExclusionService(
+                       projectPath,
+                       config.Bots.BroadcasterName,
+                       config.Bots.ExcludeBroadcaster == true);
 
-        // 7. Exposer
-        CPH.SetArgument("reward_xp_granted", xpResult.XpAdded);
-        CPH.SetArgument("reward_xp_total",   xpResult.TotalXp);
-        CPH.SetArgument("reward_isLevelUp",  xpResult.IsLevelUp);
-        CPH.SetArgument("reward_message",    message);
+        var filtered = new List<UserProfile>();
+        foreach (var u in allUsers)
+            if (!bots.IsExcluded(u.Username))
+                filtered.Add(u);
+
+        // 4. Trier (Level↓ XP↓ WatchTime↓) — réutilise la gateway de tri
+        var xp     = new XpService(repo);
+        var ranked = xp.PrepareLeaderboard(filtered);
+
+        var titles = new TitleService();
+
+        // 5. meta.json
+        exp.WriteJson(
+            Path.Combine(exportDir, "meta.json"),
+            exp.BuildMeta(1, now, season, config.Export.StreamerName));
+
+        // 6. leaderboard.json (Top N)
+        var topCount = ranked.Count < config.Export.TopCount ? ranked.Count : config.Export.TopCount;
+        var players  = new List<PublicLeaderboardEntry>();
+        for (var i = 0; i < topCount; i++)
+        {
+            var e     = ranked[i];
+            var title = titles.GetTitle(e.Level, projectPath, config.Theme);
+            players.Add(exp.BuildLeaderboardEntry(e, title));
+        }
+        exp.WriteJson(
+            Path.Combine(exportDir, "leaderboard.json"),
+            exp.BuildLeaderboardFile(players, now, season));
+
+        // 7. profils publics (optionnel)
+        var profilesWritten = 0;
+        if (config.Export.WriteProfiles == true)
+        {
+            // rang issu du classement complet (ranked[i].Rank), pas seulement du Top N
+            for (var i = 0; i < ranked.Count; i++)
+            {
+                var e    = ranked[i];
+                var user = repo.LoadUser(e.Username);
+                if (user == null) continue;
+
+                var progress = xp.GetProgress(user);
+                var title    = titles.GetTitle(user.Level, projectPath, config.Theme);
+                var profile  = exp.BuildPublicProfile(user, progress, e.Rank, title);
+
+                var ok = exp.WriteJson(
+                    Path.Combine(exportDir, "users", user.Username + ".json"),
+                    profile);
+                if (ok) profilesWritten++;
+            }
+        }
+
+        // 8. Exposer le résultat
+        CPH.SetArgument("export_enabled", true);
+        CPH.SetArgument("export_dir", exportDir);
+        CPH.SetArgument("export_players", players.Count);
+        CPH.SetArgument("export_profiles", profilesWritten);
+        CPH.LogInfo("[EXPORT_Snapshot] OK — " + players.Count + " joueurs, "
+                    + profilesWritten + " profils → " + exportDir);
 
         return true;
     }

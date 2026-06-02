@@ -54,5 +54,17 @@
     "xpCardComplete":      100,
     "cardSize":            10,
     "animationDurationMs": 5000
+  },
+
+  "export": {
+    "enabled":       false,
+    "path":          "",
+    "topCount":      50,
+    "writeProfiles": true,
+    "season":        "all-time",
+    "streamerName":  "",
+    "pushEnabled":   false,
+    "pushUrl":       "",
+    "pushApiKey":    ""
   }
 }

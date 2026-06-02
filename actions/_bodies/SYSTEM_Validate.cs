@@ -142,14 +142,52 @@ public class CPHInline
             }
         }
 
-        // 8. Vérifier le cache leaderboard
+        // 8. Vérifier la config export (V3)
+        if (config != null && config.Export != null)
+        {
+            if (config.Export.Enabled == true)
+            {
+                CPH.LogInfo("[SYSTEM] OK   — export.enabled : true");
+
+                var exportDir = config.Export.Path;
+                if (string.IsNullOrEmpty(exportDir))
+                {
+                    var cfgDir  = Path.GetDirectoryName(configPath ?? "");
+                    var projDir = Path.GetDirectoryName(cfgDir ?? "");
+                    exportDir   = Path.Combine(projDir ?? "", "exports");
+                }
+
+                try
+                {
+                    Directory.CreateDirectory(exportDir);
+                    CPH.LogInfo("[SYSTEM] OK   — dossier export accessible : " + exportDir);
+                }
+                catch (Exception ex)
+                {
+                    CPH.LogWarn("[SYSTEM] FAIL — dossier export inaccessible : " + ex.Message);
+                    ok = false;
+                }
+
+                if (config.Export.TopCount <= 0)
+                    CPH.LogWarn("[SYSTEM] WARN — export.topCount <= 0 (aucun joueur exporte)");
+
+                if (config.Export.PushEnabled == true && string.IsNullOrEmpty(config.Export.PushUrl))
+                    CPH.LogWarn("[SYSTEM] WARN — export.pushEnabled=true mais pushUrl vide");
+            }
+            else
+            {
+                CPH.LogInfo("[SYSTEM] INFO — export.enabled : false (hub web desactive)");
+            }
+        }
+
+        // 9. Vérifier le cache leaderboard
         var cacheJson = CPH.GetGlobalVar<string>("xp_leaderboard_cache", false);
         if (!string.IsNullOrEmpty(cacheJson))
             CPH.LogInfo("[SYSTEM] INFO — Cache leaderboard present en GlobalVar SB");
         else
             CPH.LogInfo("[SYSTEM] INFO — Cache leaderboard absent (normal si LEADERBOARD_Update n'a pas encore tourne)");
 
-        // 9. Résumé
+        // 10. Résumé
         CPH.LogInfo("=== SYSTEM_Validate : " + (ok ? "SUCCES — installation valide" : "ECHEC — voir les FAIL ci-dessus") + " ===");
 
         return ok;
