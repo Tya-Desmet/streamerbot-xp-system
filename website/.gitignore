@@ -1,0 +1,16 @@
+# Dépendances
+node_modules/
+
+# Build Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Données copiées depuis exports/ (dérivées, régénérables) — on garde le dossier
+/public/data/*
+!/public/data/.gitkeep
+
+# Divers
+.DS_Store
+*.log

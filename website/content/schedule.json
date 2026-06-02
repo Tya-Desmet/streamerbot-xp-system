@@ -1,0 +1,13 @@
+{
+  "nextLiveISO": "2026-06-02T20:00:00+02:00",
+  "timezone": "France (CET)",
+  "days": [
+    { "day": "Lundi", "date": "2 juin", "off": false, "game": "Valorant", "mode": "Ranked Ascension", "time": "20:00", "dur": "3h", "note": "On pousse vers Immortel, viens callbacks.", "tag": "Compétitif" },
+    { "day": "Mardi", "date": "3 juin", "off": true, "game": null, "note": "Repos / montage" },
+    { "day": "Mercredi", "date": "4 juin", "off": false, "game": "Minecraft", "mode": "SMP communauté", "time": "19:30", "dur": "4h", "note": "Build de la gare néon, chill total.", "tag": "Chill" },
+    { "day": "Jeudi", "date": "5 juin", "off": false, "game": "Just Chatting", "mode": "Q&A + StreamLevels", "time": "21:00", "dur": "2h", "note": "Tirage badges & reset hebdo du classement.", "tag": "Communauté" },
+    { "day": "Vendredi", "date": "6 juin", "off": false, "game": "Elden Ring", "mode": "Run no-hit (tentative)", "time": "20:30", "dur": "5h", "note": "Soirée souffrance, on y croit.", "tag": "Défi" },
+    { "day": "Samedi", "date": "7 juin", "off": false, "game": "Marbles / Party", "mode": "Soirée viewers", "time": "18:00", "dur": "4h", "note": "On joue ensemble, XP ×2 toute la soirée.", "tag": "Event" },
+    { "day": "Dimanche", "date": "8 juin", "off": true, "game": null, "note": "Off — peut-être un stream surprise 👀" }
+  ]
+}
