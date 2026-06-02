@@ -4,39 +4,32 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : XP_Add
+// ACTION : REWARD_BonusXp
 // ============================================================
-// RÔLE : Orchestrateur du pipeline XP chat Twitch.
+// RÔLE : Activer le multiplicateur XP temporaire pour un viewer
+//         suite au rachat d'un Channel Point.
 //
 // INSTALLATION DANS STREAMER.BOT :
-//   1. Actions → Add Action → nommer "XP_Add"
-//   2. Déclencheur : Twitch → Chat Message
+//   1. Actions → Add Action → nommer "REWARD_BonusXp"
+//   2. Déclencheur : Twitch → Channel Point Redemption
+//      Nom du reward : "Double XP" (configurable)
 //   3. Sub-Action 1 : Run Action → USER_GetOrCreate
 //   4. Sub-Action 2 : Execute C# Code → coller ce fichier
 //   5. Compiler et sauvegarder
 //
 // PRÉREQUIS :
-//   xp_configPath  string  ex: C:\...\streamerbot-xp-system\configs\config.json
-//   Persistante : oui
+//   xp_configPath  string  Persistante : oui
 //
 // ARGUMENTS ENTRANTS :
-//   args["user_username"]  — login Twitch (posé par USER_GetOrCreate)
-//   args["user_excluded"]  — bool (posé par USER_GetOrCreate)
-//   args["rawInput"]       — message brut du chat
+//   args["user_username"]   — login Twitch (posé par USER_GetOrCreate)
+//   args["user_excluded"]   — bool (posé par USER_GetOrCreate)
 //
 // ARGUMENTS SORTANTS :
-//   %xp_skipped%     bool   — true si ignoré
-//   %xp_skipReason%  string — "excluded" | "command" | "too_short" | "cooldown" | ""
-//   %xp_added%       int    — XP ajouté
-//   %xp_total%       int    — XP total après ajout
-//   %xp_oldLevel%    int    — niveau avant
-//   %xp_newLevel%    int    — niveau après
-//   %xp_isLevelUp%   bool   — true si montée de niveau
-//   %xp_xpIntoLevel% int    — XP dans le niveau actuel
-//   %xp_xpForNext%   int    — XP requis pour ce niveau
-//   %xp_percentage%  float  — % de progression
-//
-// AUCUNE logique overlay — AUCUNE logique leaderboard
+//   %reward_bonus_applied%         bool   — true si bonus activé avec succès
+//   %reward_multiplier%            float  — multiplicateur appliqué (ex: 2.0)
+//   %reward_expires_in_minutes%    int    — durée restante en minutes
+//   %reward_was_already_active%    bool   — true si bonus remplacé
+//   %reward_message%               string — message de confirmation envoyé
 // ============================================================
 
 // ----- UserRepository (source : scripts/UserRepository.cs) -----
@@ -194,288 +187,6 @@ public class UserRepository
     {
         return Path.Combine(_dataPath, username + ".json");
     }
-}
-
-// ----- ValidationService (source : scripts/ValidationService.cs) -----
-
-// ============================================================
-// ValidationService.cs — Streamer.bot XP System
-// ============================================================
-// UTILISATION DANS STREAMER.BOT :
-//   Coller ValidationResult + ValidationService au-dessus de CPHInline
-//   dans chaque action C# qui en a besoin.
-//   Passer CPH au constructeur pour la gestion du cooldown.
-//
-// Exemple d'action Streamer.bot :
-//   [ValidationResult class]
-//   [ValidationService class]
-//   public class CPHInline {
-//       public bool Execute() {
-//           var validation = new ValidationService(CPH, cooldownSeconds: 30, minLength: 2);
-//           var result = validation.ValidateMessage(userName, rawInput);
-//           if (!result.IsValid) { CPH.LogInfo($"Rejeté : {result.Reason}"); return true; }
-//           // continuer vers XP_Add, watchtime, etc.
-//           return true;
-//       }
-//   }
-// ============================================================
-
-
-// Résultat de validation — IsValid + code raison pour logging et réactions futures
-public class ValidationResult
-{
-    public bool   IsValid { get; set; }
-    public string Reason  { get; set; }
-
-    // Raisons possibles : "command" | "too_short" | "cooldown" | ""
-}
-
-// Service de validation — anti-spam, cooldown, commandes, longueur
-// Aucune logique XP, aucune logique overlay
-// Réutilisable par : XP chat, watchtime, rewards, mini-jeux
-public class ValidationService
-{
-    private readonly IInlineInvokeProxy _CPH;
-    private readonly int _cooldownSeconds;
-    private readonly int _minLength;
-
-    public ValidationService(IInlineInvokeProxy CPH, int cooldownSeconds = 30, int minLength = 2)
-    {
-        _CPH             = CPH;
-        _cooldownSeconds = cooldownSeconds;
-        _minLength       = minLength;
-    }
-
-    // Point d'entrée — valide un message de chat Twitch
-    public ValidationResult ValidateMessage(string username, string message)
-    {
-        if (IsCommand(message))
-            return Reject("command");
-
-        if (IsTooShort(message))
-            return Reject("too_short");
-
-        if (IsOnCooldown(username))
-            return Reject("cooldown");
-
-        SetCooldown(username);
-        return Accept();
-    }
-
-    // Détecte les commandes Twitch (!command, /me, .color...)
-    private bool IsCommand(string message)
-    {
-        if (string.IsNullOrWhiteSpace(message)) return true;
-
-        var first = message.TrimStart()[0];
-        return first == '!' || first == '/' || first == '.';
-    }
-
-    // Vérifie la longueur minimale après nettoyage des espaces
-    private bool IsTooShort(string message)
-    {
-        return message.Trim().Length < _minLength;
-    }
-
-    // Vérifie si l'utilisateur est encore en cooldown via Global Variables Streamer.bot
-    // GetGlobalVar retourne 0 si la clé n'existe pas — premier message toujours autorisé
-    private bool IsOnCooldown(string username)
-    {
-        var lastTime = _CPH.GetGlobalVar<long>("cooldown_" + username, false);
-        var now      = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        return (now - lastTime) < _cooldownSeconds;
-    }
-
-    // Enregistre le timestamp Unix du dernier message valide
-    private void SetCooldown(string username)
-    {
-        _CPH.SetGlobalVar("cooldown_" + username, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), false);
-    }
-
-    private ValidationResult Accept()
-        => new ValidationResult { IsValid = true, Reason = "" };
-
-    private ValidationResult Reject(string reason)
-        => new ValidationResult { IsValid = false, Reason = reason };
-}
-
-// ----- XpService (source : scripts/XpService.cs) -----
-
-// ============================================================
-// XpService.cs — Streamer.bot XP System
-// ============================================================
-// RÈGLE ABSOLUE : toute modification XP passe par AddXp()
-// Ce service ne déclenche jamais d'overlay, ne gère jamais OBS.
-//
-// Flux recommandé dans une action Streamer.bot :
-//   1. ValidationService.ValidateMessage()  → rejeter si invalide
-//   2. UserRepository.LoadUser()            → charger profil
-//   3. XpService.AddXp()                   → modifier XP + sauvegarder
-//   4. Lire XpResult.IsLevelUp             → déclencher overlay si besoin
-//
-// UTILISATION DANS STREAMER.BOT :
-//   Coller les 4 classes + XpService au-dessus de CPHInline.
-// ============================================================
-
-
-// Résultat retourné par AddXp — consommé par l'action Streamer.bot pour les overlays
-public class XpResult
-{
-    public string Username  { get; set; }
-    public int    XpAdded   { get; set; }
-    public int    TotalXp   { get; set; }
-    public int    OldLevel  { get; set; }
-    public int    NewLevel  { get; set; }
-    public bool   IsLevelUp { get; set; }
-}
-
-// Progression XP dans le niveau actuel — profile cards, overlay barre XP
-public class XpProgress
-{
-    public int   CurrentXp   { get; set; }
-    public int   XpIntoLevel { get; set; }
-    public int   XpForNext   { get; set; }
-    public float Percentage  { get; set; }
-}
-
-// Entrée de leaderboard — overlay, export web, profile cards
-public class LeaderboardEntry
-{
-    public int    Rank        { get; set; }
-    public string Username    { get; set; }
-    public string DisplayName { get; set; }
-    public int    Xp          { get; set; }
-    public int    Level       { get; set; }
-    public int    WatchTime   { get; set; }
-}
-
-// GATEWAY XP — aucune logique overlay, aucune logique OBS
-public class XpService
-{
-    private readonly UserRepository _repo;
-
-    public XpService(UserRepository repo) { _repo = repo; }
-
-    // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
-    // source : "chat" | "watchtime" | "reward"
-    public XpResult AddXp(UserProfile user, int amount, string source)
-    {
-        if (user == null) return null;
-
-        var oldLevel = user.Level;
-        user.Xp     += amount;
-        user.Level   = CalculateLevel(user.Xp);
-
-        if (source == "chat")
-        {
-            user.Messages++;
-            user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            user.XpFromChat          += amount;
-        }
-        else if (source == "watchtime") { user.XpFromWatch   += amount; }
-        else if (source == "reward")    { user.XpFromRewards  += amount; }
-
-        _repo.SaveUser(user);
-
-        return new XpResult
-        {
-            Username  = user.Username,
-            XpAdded   = amount,
-            TotalXp   = user.Xp,
-            OldLevel  = oldLevel,
-            NewLevel  = user.Level,
-            IsLevelUp = user.Level > oldLevel
-        };
-    }
-
-    // GATEWAY WATCHTIME (V2) — variante optimisée pour les cycles watchtime
-    // Accepte le profil déjà chargé pour éviter un double accès disque.
-    // Met à jour XP, Level, WatchTime et LastWatchTimestamp en une seule écriture.
-    public XpResult AddWatchTimeXp(UserProfile user, int amount, int intervalMinutes, long nowSeconds)
-    {
-        if (user == null) return null;
-
-        var oldLevel             = user.Level;
-        user.Xp                 += amount;
-        user.Level               = CalculateLevel(user.Xp);
-        user.WatchTime          += intervalMinutes;
-        user.LastWatchTimestamp  = nowSeconds;
-        user.XpFromWatch        += amount;
-        _repo.SaveUser(user);
-
-        return new XpResult
-        {
-            Username  = user.Username,
-            XpAdded   = amount,
-            TotalXp   = user.Xp,
-            OldLevel  = oldLevel,
-            NewLevel  = user.Level,
-            IsLevelUp = user.Level > oldLevel
-        };
-    }
-
-    // Retourne la progression XP dans le niveau actuel
-    public XpProgress GetProgress(UserProfile user)
-    {
-        var xpAtStart   = XpAtLevelStart(user.Level);
-        var xpForNext   = XpForNextLevel(user.Level);
-        var xpIntoLevel = user.Xp - xpAtStart;
-
-        return new XpProgress
-        {
-            CurrentXp   = user.Xp,
-            XpIntoLevel = xpIntoLevel,
-            XpForNext   = xpForNext,
-            Percentage  = xpForNext > 0 ? (float)xpIntoLevel / xpForNext * 100f : 0f
-        };
-    }
-
-    // Prépare le leaderboard — tri V2 : Level DESC → XP DESC → WatchTime DESC
-    public List<LeaderboardEntry> PrepareLeaderboard(List<UserProfile> users)
-    {
-        users.Sort((a, b) => {
-            if (b.Level    != a.Level)    return b.Level.CompareTo(a.Level);
-            if (b.Xp       != a.Xp)       return b.Xp.CompareTo(a.Xp);
-            return b.WatchTime.CompareTo(a.WatchTime);
-        });
-
-        var result = new List<LeaderboardEntry>();
-        for (var i = 0; i < users.Count; i++)
-        {
-            var u = users[i];
-            result.Add(new LeaderboardEntry
-            {
-                Rank        = i + 1,
-                Username    = u.Username,
-                DisplayName = string.IsNullOrEmpty(u.DisplayName) ? u.Username : u.DisplayName,
-                Xp          = u.Xp,
-                Level       = u.Level,
-                WatchTime   = u.WatchTime
-            });
-        }
-        return result;
-    }
-
-    private int CalculateLevel(int totalXp)
-    {
-        var level = 1; var acc = 0;
-        while (true)
-        {
-            var threshold = XpForNextLevel(level);
-            if (acc + threshold > totalXp) break;
-            acc += threshold; level++;
-        }
-        return level;
-    }
-
-    private int XpAtLevelStart(int level)
-    {
-        var acc = 0;
-        for (var l = 1; l < level; l++) acc += XpForNextLevel(l);
-        return acc;
-    }
-
-    private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }
 
 // ----- RewardService (source : scripts/RewardService.cs) -----
@@ -754,101 +465,67 @@ public class CPHInline
 {
     public bool Execute()
     {
-        // 1. Vérifier le flag d'exclusion posé par USER_GetOrCreate
+        // 1. Vérifier exclusion
         var excluded = args.ContainsKey("user_excluded")
                        && args["user_excluded"] != null
                        && (bool)args["user_excluded"] == true;
+        if (excluded) return true;
 
-        if (excluded)
-        {
-            CPH.SetArgument("xp_skipped",    true);
-            CPH.SetArgument("xp_skipReason", "excluded");
-            return true;
-        }
-
-        // 2. Username posé par USER_GetOrCreate
+        // 2. Username
         if (!args.ContainsKey("user_username") || args["user_username"] == null)
         {
-            CPH.LogWarn("[XP_Add] user_username absent — USER_GetOrCreate doit être la sub-action précédente");
+            CPH.LogWarn("[REWARD_BonusXp] user_username absent — USER_GetOrCreate requis");
             return false;
         }
-
         var username = args["user_username"].ToString();
 
-        // 3. Message brut
-        if (!args.ContainsKey("rawInput") || args["rawInput"] == null)
+        // 3. Configuration
+        var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+        var config     = new ConfigService(CPH).LoadConfig(configPath);
+
+        if (config.Rewards.BonusXpEnabled != true)
         {
-            CPH.LogWarn("[XP_Add] rawInput absent — vérifier le déclencheur Twitch Chat Message");
-            return false;
-        }
-
-        var rawInput = args["rawInput"].ToString();
-
-        // 4. Configuration
-        var configPath   = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config       = new ConfigService(CPH).LoadConfig(configPath);
-
-        if (string.IsNullOrEmpty(config.DataPath))
-        {
-            CPH.LogWarn("[XP_Add] dataPath non configuré dans configs/config.json");
-            return false;
-        }
-
-        // 5. Validation anti-spam
-        var validation = new ValidationService(CPH, config.Xp.CooldownSeconds, config.Xp.MinMessageLength);
-        var check      = validation.ValidateMessage(username, rawInput);
-
-        if (!check.IsValid)
-        {
-            if (config.Debug.Verbose)
-                CPH.LogInfo("[XP_Add] Skip : " + check.Reason + " pour " + username);
-            CPH.SetArgument("xp_skipped",    true);
-            CPH.SetArgument("xp_skipReason", check.Reason);
+            CPH.LogInfo("[REWARD_BonusXp] Feature desactivee dans config.json");
+            CPH.SetArgument("reward_bonus_applied", false);
             return true;
         }
 
-        // 6. Charger profil (une seule fois)
+        // 4. Charger profil
         var repo = new UserRepository(config.DataPath);
         var user = repo.LoadUser(username);
 
         if (user == null)
         {
-            CPH.LogWarn("[XP_Add] Profil introuvable pour '" + username + "' malgré USER_GetOrCreate");
+            CPH.LogWarn("[REWARD_BonusXp] Profil introuvable pour '" + username + "'");
             return false;
         }
 
-        // 7. Vérifier bonus actif + calculer XP effectif
-        var rewards     = new RewardService();
-        var now         = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var multiplier  = rewards.GetCurrentMultiplier(user, now);
-        var effectiveXp = (int)Math.Round(config.Xp.PerMessage * multiplier);
+        // 5. Appliquer le bonus
+        var rewards = new RewardService();
+        var now     = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var result  = rewards.ApplyBonus(
+            user,
+            config.Rewards.BonusXpMultiplier,
+            config.Rewards.BonusXpDurationMinutes,
+            now);
 
-        var xpService = new XpService(repo);
-        var xpResult  = xpService.AddXp(user, effectiveXp, "chat");
+        repo.SaveUser(user);
 
-        // 8. Progression XP dans le niveau (user déjà en mémoire — zéro I/O)
-        var progress = xpService.GetProgress(user);
+        // 6. Message chat
+        var displayName = string.IsNullOrEmpty(user.DisplayName) ? username : user.DisplayName;
+        var message     = result.WasAlreadyActive
+            ? "@" + displayName + " — Double XP prolonge ! x" + result.MultiplierApplied + " pendant encore " + result.ExpiresInMinutes + " min"
+            : "@" + displayName + " — Double XP active ! x" + result.MultiplierApplied + " pendant " + result.ExpiresInMinutes + " min";
 
-        // 9. Exposer les résultats
-        CPH.SetArgument("xp_skipped",      false);
-        CPH.SetArgument("xp_skipReason",   "");
-        CPH.SetArgument("xp_added",        xpResult.XpAdded);
-        CPH.SetArgument("xp_total",        xpResult.TotalXp);
-        CPH.SetArgument("xp_oldLevel",     xpResult.OldLevel);
-        CPH.SetArgument("xp_newLevel",     xpResult.NewLevel);
-        CPH.SetArgument("xp_isLevelUp",    xpResult.IsLevelUp);
-        CPH.SetArgument("xp_xpIntoLevel",  progress.XpIntoLevel);
-        CPH.SetArgument("xp_xpForNext",    progress.XpForNext);
-        CPH.SetArgument("xp_percentage",   progress.Percentage);
-        CPH.SetArgument("xp_multiplier",   multiplier);
-        CPH.SetArgument("xp_effective",    effectiveXp);
-        CPH.SetArgument("xp_from_chat",    user.XpFromChat);
-        CPH.SetArgument("xp_from_watch",   user.XpFromWatch);
-        CPH.SetArgument("xp_from_rewards", user.XpFromRewards);
-        CPH.SetArgument("xp_bonus_active", multiplier > 1.0f);
+        CPH.SendMessage(message);
+        CPH.LogInfo("[REWARD_BonusXp] " + username + " — x" + result.MultiplierApplied + " pendant " + result.ExpiresInMinutes + " min");
 
-        if (xpResult.IsLevelUp)
-            CPH.LogInfo("[XP_Add] LEVEL UP ! " + username + " : Niv. " + xpResult.OldLevel + " -> " + xpResult.NewLevel);
+        // 7. Exposer
+        CPH.SetArgument("reward_bonus_applied",      true);
+        CPH.SetArgument("reward_multiplier",         result.MultiplierApplied);
+        CPH.SetArgument("reward_expires_in_minutes", result.ExpiresInMinutes);
+        CPH.SetArgument("reward_was_already_active", result.WasAlreadyActive);
+        CPH.SetArgument("reward_message",            message);
 
         return true;
     }

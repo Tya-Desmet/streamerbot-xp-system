@@ -6,6 +6,56 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [2.6.0] — 2026-06-02
+
+### Ajouté
+
+**Récompenses Channel Points (REWARD_BonusXp / REWARD_GrantXp)**
+- `REWARD_BonusXp` — active un multiplicateur d'XP temporaire (configurable : facteur × durée en minutes) via Channel Point. Affiché en badge ⚡ sur la carte de profil.
+- `REWARD_GrantXp` — octroie un montant fixe d'XP à un viewer via Channel Point.
+- `RewardService` — service dédié au cycle de vie du multiplicateur (activation, lecture, expiration paresseuse). Aucune écriture disque directe.
+
+**Check-in quotidien (DAILY_CheckIn)**
+- Carte de fidélité à 10 cases : 1 case/jour par Channel Point "Check-in".
+- XP par case (`xpPerCheckin`) + bonus carte complète (`xpCardComplete`).
+- Anti-rebond quotidien — refus silencieux si déjà fait aujourd'hui.
+- `TotalCheckIns` exposé pour les futures mécaniques (coffres V4, etc.).
+- Overlay check-in animé déclenché à chaque validation.
+
+**Overlay check-in**
+- Nouveau overlay `overlays/checkin/` avec 6 thèmes (default, rpg, cyber, minimal, tokyo, sakura + myastya-samourai).
+- Animation entrée spring-pop, icône ✓ stamp, cases échelonnées, état carte complète.
+
+**Badge bonus XP sur la carte de profil**
+- Badge `⚡ ×2 · 30 min` visible sur la card quand un multiplicateur est actif.
+- Masqué automatiquement quand le bonus est expiré.
+
+**Thème myastya-samourai (card / leaderboard / check-in)**
+- Palette nuit indigo profonde + magenta cerisier, polices `Shippori Mincho` + `Noto Sans JP`.
+- Animations contextuelles (pas de fond permanent) :
+  - Card : slash samourai lumineux au `cardIn` + burst d'étincelles.
+  - Check-in : grand pétale SVG qui se pose à l'apparition, bloom par case cochée, burst sur carte complète.
+  - Leaderboard : burst au reveal, pétale prize sur le n°1, micro-bursts sur les rangs.
+- Effets sonores : synthèse Web Audio par défaut, remplaçables par fichiers via `sounds.json`.
+- Actif par défaut (`?mute` pour couper) ; aucun `requestAnimationFrame` hors animation.
+
+### Modifié
+
+- `config.json` — nouvelles sections `rewards` et `checkIn` avec valeurs par défaut.
+- `ConfigService` — parsing des sections rewards et checkIn.
+- `UserRepository` / `UserProfile` — champs `BonusExpiryTimestamp`, `ActiveBonusMultiplier`, `LastCheckInDate`, `CheckInCount`, `TotalCheckIns`.
+- `XpService` — applique le multiplicateur actif lors du calcul XP.
+- `CARD_ShowProfile` — envoie `bonusActive`, `bonusMultiplier`, `bonusMinutesLeft` à l'overlay.
+- Actions générées (`actions/generated/`) — reconstruites via `build-actions.ps1`.
+- `docs/CONFIGURATION.md` — sections `rewards` et `checkIn` documentées.
+- `docs/DEVELOPER.md` — nouvelles actions et `RewardService` listés.
+
+### Supprimé
+
+- `PLAN_REMEDIATION.md` — document de planification interne, remédiation P01-P15 terminée.
+
+---
+
 ## [1.0.0] — 2025-05-30
 
 ### Ajouté

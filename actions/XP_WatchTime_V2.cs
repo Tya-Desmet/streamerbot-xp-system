@@ -1,3 +1,8 @@
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
 // ============================================================
 // ACTION : XP_WatchTime_V2
 // ============================================================
@@ -36,13 +41,31 @@
 //   • A chatté dans les 2× intervalles précédents (LastMessageTimestamp)
 // ============================================================
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+// ----- UserRepository (source : scripts/UserRepository.cs) -----
 
-// ----- UserProfile (source : scripts/UserRepository.cs) -----
+// ============================================================
+// UserRepository.cs — Streamer.bot XP System
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Ce fichier est une référence source.
+//   Coller UserProfile + UserRepository au-dessus de CPHInline
+//   dans chaque action C# qui en a besoin.
+//
+// Exemple d'action Streamer.bot :
+//   [UserProfile class]
+//   [UserRepository class]
+//   public class CPHInline {
+//       public bool Execute() {
+//           var repo = new UserRepository(CPH.GetGlobalVar<string>("dataPath", true));
+//           ...
+//           return true;
+//       }
+//   }
+// ============================================================
 
+
+// Modèle utilisateur — structure exacte du JSON sur disque
+// Champs alignés avec /data/users/{username}.json (voir README)
 public class UserProfile
 {
     public string Username             { get; set; }
@@ -50,14 +73,22 @@ public class UserProfile
     public int    Xp                   { get; set; }
     public int    Level                { get; set; }
     public int    Messages             { get; set; }
-    public int    WatchTime            { get; set; }
+    public int    WatchTime            { get; set; }   // minutes cumulées regardées
     public long   LastMessageTimestamp { get; set; }
-    public long   LastWatchTimestamp   { get; set; }
-    public int    WatchStreak          { get; set; }
+    public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
+    public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
+    public int    XpFromChat             { get; set; }
+    public int    XpFromWatch            { get; set; }
+    public int    XpFromRewards          { get; set; }
+    public float  ActiveBonusMultiplier  { get; set; } = 1.0f;
+    public long   BonusExpiryTimestamp   { get; set; }
+    public int    CheckInCount           { get; set; }
+    public int    LastCheckInDay         { get; set; }
+    public int    TotalCheckIns          { get; set; }
 }
 
-// ----- UserRepository (source : scripts/UserRepository.cs) -----
-
+// Repository — lecture et écriture JSON uniquement
+// Aucune logique XP, aucune logique overlay, aucun calcul
 public class UserRepository
 {
     private readonly string _dataPath;
@@ -68,37 +99,49 @@ public class UserRepository
         Directory.CreateDirectory(_dataPath);
     }
 
-    public List<UserProfile> GetAllUsers()
+    // Vérifie si le fichier {username}.json existe
+    public bool UserExists(string username)
     {
-        var users = new List<UserProfile>();
-        foreach (var file in Directory.GetFiles(_dataPath, "*.json"))
-        {
-            if (file.EndsWith(".tmp")) continue;
-            try
-            {
-                var user = JsonConvert.DeserializeObject<UserProfile>(File.ReadAllText(file));
-                if (user != null) users.Add(user);
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    var errPath = Path.Combine(_dataPath, "_errors.log");
-                    File.AppendAllText(errPath,
-                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
-                        + "Fichier corrompu : " + Path.GetFileName(file)
-                        + " — " + ex.Message + "\n");
-                }
-                catch { }
-            }
-        }
-        return users;
+        return File.Exists(GetFilePath(username));
     }
 
+    // Crée un profil vierge pour un nouveau viewer
+    public UserProfile CreateUser(string username, string displayName = null)
+    {
+        var user = new UserProfile
+        {
+            Username             = username,
+            DisplayName          = displayName ?? username,
+            Xp                   = 0,
+            Level                = 1,
+            Messages             = 0,
+            WatchTime            = 0,
+            LastMessageTimestamp = 0,
+            LastWatchTimestamp   = 0,
+            WatchStreak          = 0
+        };
+
+        SaveUser(user);
+        return user;
+    }
+
+    // Charge le profil depuis le JSON — retourne null si introuvable
+    public UserProfile LoadUser(string username)
+    {
+        var path = GetFilePath(username);
+
+        if (!File.Exists(path))
+            return null;
+
+        var json = File.ReadAllText(path);
+        return JsonConvert.DeserializeObject<UserProfile>(json);
+    }
+
+    // Persiste le profil sur le disque
     public void SaveUser(UserProfile user)
     {
         var json    = JsonConvert.SerializeObject(user, Formatting.Indented);
-        var path    = Path.Combine(_dataPath, user.Username + ".json");
+        var path    = GetFilePath(user.Username);
         var tmpPath = path + ".tmp";
 
         try
@@ -116,47 +159,265 @@ public class UserRepository
             throw;
         }
     }
+
+    // Charge tous les profils du dossier — pour leaderboard, export, stats globales
+    public List<UserProfile> GetAllUsers()
+    {
+        var users = new List<UserProfile>();
+        var files = Directory.GetFiles(_dataPath, "*.json");
+
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".tmp")) continue;
+            try
+            {
+                var json = File.ReadAllText(file);
+                var user = JsonConvert.DeserializeObject<UserProfile>(json);
+                if (user != null) users.Add(user);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var errPath = Path.Combine(_dataPath, "_errors.log");
+                    File.AppendAllText(errPath,
+                        "[" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "] "
+                        + "Fichier corrompu : " + Path.GetFileName(file)
+                        + " — " + ex.Message + "\n");
+                }
+                catch { }
+            }
+        }
+
+        return users;
+    }
+
+    private string GetFilePath(string username)
+    {
+        return Path.Combine(_dataPath, username + ".json");
+    }
 }
 
 // ----- WatchTimeService (source : scripts/WatchTimeService.cs) -----
 
+// ============================================================
+// WatchTimeService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ : Vérifier l'éligibilité watchtime d'un viewer.
+//                  Ne lit et n'écrit jamais le disque directement.
+//
+// UTILISATION DANS STREAMER.BOT :
+//   Coller WatchTimeResult + WatchTimeService au-dessus de CPHInline
+//   dans l'action XP_WatchTime.
+//
+// FLUX DANS XP_WatchTime :
+//   1. UserRepository.LoadUser() ou CreateUser()   → UserProfile
+//   2. WatchTimeService.IsEligible()               → bool
+//   3. Si true : XpService.AddWatchTimeXp()        → XpResult
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+// Résultat d'un cycle watchtime pour un viewer — pour logging et debug
+public class WatchTimeResult
+{
+    public string Username    { get; set; }
+    public int    XpAwarded   { get; set; }
+    public bool   WasEligible { get; set; }
+    public string SkipReason  { get; set; }  // vide si éligible
+}
+
 public class WatchTimeService
 {
+    // Vérifie si le viewer peut recevoir de l'XP watchtime ce cycle.
+    //
+    // Retourne false si :
+    //   - user est null
+    //   - LastWatchTimestamp est trop récent (< intervalMinutes - TOLERANCE)
+    //
+    // Tolérance de 10 secondes pour absorber les imprécisions des timers
+    // Streamer.bot (un timer de 5 min peut déclencher à 4 min 52 sec).
     private const int TimerToleranceSeconds = 10;
 
     public bool IsEligible(UserProfile user, int intervalMinutes, long nowSeconds)
     {
-        if (user == null) return false;
-        return (nowSeconds - user.LastWatchTimestamp) >= (intervalMinutes * 60 - TimerToleranceSeconds);
+        if (user == null)
+            return false;
+
+        var intervalSeconds  = intervalMinutes * 60;
+        var elapsed          = nowSeconds - user.LastWatchTimestamp;
+
+        return elapsed >= (intervalSeconds - TimerToleranceSeconds);
+    }
+
+    // Construit un WatchTimeResult pour logging
+    public WatchTimeResult BuildResult(string username, int xpAwarded, bool eligible, string skipReason = "")
+    {
+        return new WatchTimeResult
+        {
+            Username    = username,
+            XpAwarded   = eligible ? xpAwarded : 0,
+            WasEligible = eligible,
+            SkipReason  = skipReason
+        };
     }
 }
 
-// ----- XpResult + XpService (source : scripts/XpService.cs) -----
+// ----- XpService (source : scripts/XpService.cs) -----
 
+// ============================================================
+// XpService.cs — Streamer.bot XP System
+// ============================================================
+// RÈGLE ABSOLUE : toute modification XP passe par AddXp()
+// Ce service ne déclenche jamais d'overlay, ne gère jamais OBS.
+//
+// Flux recommandé dans une action Streamer.bot :
+//   1. ValidationService.ValidateMessage()  → rejeter si invalide
+//   2. UserRepository.LoadUser()            → charger profil
+//   3. XpService.AddXp()                   → modifier XP + sauvegarder
+//   4. Lire XpResult.IsLevelUp             → déclencher overlay si besoin
+//
+// UTILISATION DANS STREAMER.BOT :
+//   Coller les 4 classes + XpService au-dessus de CPHInline.
+// ============================================================
+
+
+// Résultat retourné par AddXp — consommé par l'action Streamer.bot pour les overlays
 public class XpResult
 {
-    public int  XpAdded   { get; set; }
-    public int  OldLevel  { get; set; }
-    public int  NewLevel  { get; set; }
-    public bool IsLevelUp { get; set; }
+    public string Username  { get; set; }
+    public int    XpAdded   { get; set; }
+    public int    TotalXp   { get; set; }
+    public int    OldLevel  { get; set; }
+    public int    NewLevel  { get; set; }
+    public bool   IsLevelUp { get; set; }
 }
 
+// Progression XP dans le niveau actuel — profile cards, overlay barre XP
+public class XpProgress
+{
+    public int   CurrentXp   { get; set; }
+    public int   XpIntoLevel { get; set; }
+    public int   XpForNext   { get; set; }
+    public float Percentage  { get; set; }
+}
+
+// Entrée de leaderboard — overlay, export web, profile cards
+public class LeaderboardEntry
+{
+    public int    Rank        { get; set; }
+    public string Username    { get; set; }
+    public string DisplayName { get; set; }
+    public int    Xp          { get; set; }
+    public int    Level       { get; set; }
+    public int    WatchTime   { get; set; }
+}
+
+// GATEWAY XP — aucune logique overlay, aucune logique OBS
 public class XpService
 {
     private readonly UserRepository _repo;
 
     public XpService(UserRepository repo) { _repo = repo; }
 
+    // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
+    // source : "chat" | "watchtime" | "reward"
+    public XpResult AddXp(UserProfile user, int amount, string source)
+    {
+        if (user == null) return null;
+
+        var oldLevel = user.Level;
+        user.Xp     += amount;
+        user.Level   = CalculateLevel(user.Xp);
+
+        if (source == "chat")
+        {
+            user.Messages++;
+            user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            user.XpFromChat          += amount;
+        }
+        else if (source == "watchtime") { user.XpFromWatch   += amount; }
+        else if (source == "reward")    { user.XpFromRewards  += amount; }
+
+        _repo.SaveUser(user);
+
+        return new XpResult
+        {
+            Username  = user.Username,
+            XpAdded   = amount,
+            TotalXp   = user.Xp,
+            OldLevel  = oldLevel,
+            NewLevel  = user.Level,
+            IsLevelUp = user.Level > oldLevel
+        };
+    }
+
+    // GATEWAY WATCHTIME (V2) — variante optimisée pour les cycles watchtime
+    // Accepte le profil déjà chargé pour éviter un double accès disque.
+    // Met à jour XP, Level, WatchTime et LastWatchTimestamp en une seule écriture.
     public XpResult AddWatchTimeXp(UserProfile user, int amount, int intervalMinutes, long nowSeconds)
     {
         if (user == null) return null;
-        var oldLevel            = user.Level;
-        user.Xp                += amount;
-        user.Level              = CalculateLevel(user.Xp);
-        user.WatchTime         += intervalMinutes;
-        user.LastWatchTimestamp = nowSeconds;
+
+        var oldLevel             = user.Level;
+        user.Xp                 += amount;
+        user.Level               = CalculateLevel(user.Xp);
+        user.WatchTime          += intervalMinutes;
+        user.LastWatchTimestamp  = nowSeconds;
+        user.XpFromWatch        += amount;
         _repo.SaveUser(user);
-        return new XpResult { XpAdded = amount, OldLevel = oldLevel, NewLevel = user.Level, IsLevelUp = user.Level > oldLevel };
+
+        return new XpResult
+        {
+            Username  = user.Username,
+            XpAdded   = amount,
+            TotalXp   = user.Xp,
+            OldLevel  = oldLevel,
+            NewLevel  = user.Level,
+            IsLevelUp = user.Level > oldLevel
+        };
+    }
+
+    // Retourne la progression XP dans le niveau actuel
+    public XpProgress GetProgress(UserProfile user)
+    {
+        var xpAtStart   = XpAtLevelStart(user.Level);
+        var xpForNext   = XpForNextLevel(user.Level);
+        var xpIntoLevel = user.Xp - xpAtStart;
+
+        return new XpProgress
+        {
+            CurrentXp   = user.Xp,
+            XpIntoLevel = xpIntoLevel,
+            XpForNext   = xpForNext,
+            Percentage  = xpForNext > 0 ? (float)xpIntoLevel / xpForNext * 100f : 0f
+        };
+    }
+
+    // Prépare le leaderboard — tri V2 : Level DESC → XP DESC → WatchTime DESC
+    public List<LeaderboardEntry> PrepareLeaderboard(List<UserProfile> users)
+    {
+        users.Sort((a, b) => {
+            if (b.Level    != a.Level)    return b.Level.CompareTo(a.Level);
+            if (b.Xp       != a.Xp)       return b.Xp.CompareTo(a.Xp);
+            return b.WatchTime.CompareTo(a.WatchTime);
+        });
+
+        var result = new List<LeaderboardEntry>();
+        for (var i = 0; i < users.Count; i++)
+        {
+            var u = users[i];
+            result.Add(new LeaderboardEntry
+            {
+                Rank        = i + 1,
+                Username    = u.Username,
+                DisplayName = string.IsNullOrEmpty(u.DisplayName) ? u.Username : u.DisplayName,
+                Xp          = u.Xp,
+                Level       = u.Level,
+                WatchTime   = u.WatchTime
+            });
+        }
+        return result;
     }
 
     private int CalculateLevel(int totalXp)
@@ -164,15 +425,118 @@ public class XpService
         var level = 1; var acc = 0;
         while (true)
         {
-            var threshold = (int)(100 * Math.Pow(level, 1.5));
+            var threshold = XpForNextLevel(level);
             if (acc + threshold > totalXp) break;
             acc += threshold; level++;
         }
         return level;
     }
+
+    private int XpAtLevelStart(int level)
+    {
+        var acc = 0;
+        for (var l = 1; l < level; l++) acc += XpForNextLevel(l);
+        return acc;
+    }
+
+    private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
+}
+
+// ----- RewardService (source : scripts/RewardService.cs) -----
+
+// ============================================================
+// RewardService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Gérer le cycle de vie du multiplicateur XP temporaire.
+//   Ne lit et n'écrit jamais le disque directement.
+//   Délègue la persistance à l'action appelante.
+//
+// UTILISATION :
+//   var rewards = new RewardService();
+//   var multiplier = rewards.GetCurrentMultiplier(user, now);
+//   var result = rewards.ApplyBonus(user, 2.0f, 30, now);
+//   repo.SaveUser(user); // ← sauvegarder APRÈS ApplyBonus
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+public class BonusResult
+{
+    public float MultiplierApplied { get; set; }
+    public long  ExpiresAt         { get; set; }
+    public bool  WasAlreadyActive  { get; set; }
+    public int   ExpiresInMinutes  { get; set; }
+}
+
+public class RewardService
+{
+    public float GetCurrentMultiplier(UserProfile user, long nowSeconds)
+    {
+        if (user == null) return 1.0f;
+        if (user.BonusExpiryTimestamp <= 0) return 1.0f;
+        if (nowSeconds >= user.BonusExpiryTimestamp)
+        {
+            user.ActiveBonusMultiplier = 1.0f;
+            user.BonusExpiryTimestamp  = 0;
+            return 1.0f;
+        }
+        return user.ActiveBonusMultiplier > 1.0f ? user.ActiveBonusMultiplier : 1.0f;
+    }
+
+    public bool IsBonusActive(UserProfile user, long nowSeconds)
+    {
+        if (user == null) return false;
+        return user.ActiveBonusMultiplier > 1.0f
+            && user.BonusExpiryTimestamp > 0
+            && nowSeconds < user.BonusExpiryTimestamp;
+    }
+
+    public BonusResult ApplyBonus(UserProfile user, float multiplier, int durationMinutes, long nowSeconds)
+    {
+        var wasActive = IsBonusActive(user, nowSeconds);
+        user.ActiveBonusMultiplier = multiplier;
+        user.BonusExpiryTimestamp  = nowSeconds + (long)(durationMinutes * 60);
+        var minutesRemaining = (int)((user.BonusExpiryTimestamp - nowSeconds) / 60);
+        return new BonusResult
+        {
+            MultiplierApplied = multiplier,
+            ExpiresAt         = user.BonusExpiryTimestamp,
+            WasAlreadyActive  = wasActive,
+            ExpiresInMinutes  = minutesRemaining
+        };
+    }
+
+    public int GetMinutesRemaining(UserProfile user, long nowSeconds)
+    {
+        if (!IsBonusActive(user, nowSeconds)) return 0;
+        var seconds = user.BonusExpiryTimestamp - nowSeconds;
+        return seconds > 0 ? (int)(seconds / 60) : 0;
+    }
 }
 
 // ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
+
+// ============================================================
+// BotExclusionService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Charger et vérifier la liste des comptes exclus du système XP.
+//   Aucun exclu ne gagne d'XP, n'apparaît dans le leaderboard,
+//   ne peut afficher de profile card ni répondre à !rank.
+//
+// SOURCES D'EXCLUSION (priorité) :
+//   1. configs/excluded-users.json     ← liste personnalisée utilisateur
+//   2. Si config.excludeBroadcaster = true et config.broadcasterName renseigné
+//      → le streamer est automatiquement exclu
+//   3. Fallback codé en dur si le fichier JSON est absent ou vide
+//
+// COMPARAISON : insensible à la casse (OrdinalIgnoreCase)
+//   "NightBot", "nightbot", "NIGHTBOT" → même compte
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
 
 public class BotExclusionService
 {
@@ -202,20 +566,56 @@ public class BotExclusionService
                 var list = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(path));
                 if (list != null)
                     foreach (var name in list)
-                        if (!string.IsNullOrWhiteSpace(name)) _excluded[name.Trim()] = true;
+                        if (!string.IsNullOrWhiteSpace(name))
+                            _excluded[name.Trim()] = true;
                 // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
                 if (_excluded.Count > 0) return;
             }
             catch { }
         }
-        _excluded["nightbot"] = true;     _excluded["streamelements"] = true;
-        _excluded["streamlabs"] = true;   _excluded["moobot"] = true;
-        _excluded["fossabot"] = true;     _excluded["wizebot"] = true;
-        _excluded["mixitupbot"] = true;   _excluded["streamerbot"] = true;
+        _excluded["nightbot"]      = true;
+        _excluded["streamelements"] = true;
+        _excluded["streamlabs"]    = true;
+        _excluded["moobot"]        = true;
+        _excluded["fossabot"]      = true;
+        _excluded["wizebot"]       = true;
+        _excluded["mixitupbot"]    = true;
+        _excluded["streamerbot"]   = true;
     }
 }
 
-// ----- Config (source : scripts/ConfigService.cs) -----
+// ----- ConfigService (source : scripts/ConfigService.cs) -----
+
+// ============================================================
+// ConfigService.cs — Streamer.bot XP System (V2)
+// ============================================================
+// UTILISATION DANS STREAMER.BOT :
+//   Coller tous les types Config + ConfigService au-dessus de CPHInline.
+//   Une seule Global Variable à définir dans Streamer.bot :
+//
+//     Nom     : xp_configPath
+//     Valeur  : C:\Users\TonNom\streamerbot-xp-system\configs\config.json
+//     Persist : oui
+//
+//   Puis dans Execute() :
+//     var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+//     var config     = new ConfigService().LoadConfig(configPath);
+//     // config.DataPath, config.Xp.PerMessage, config.Bots.BroadcasterName...
+//
+// STRUCTURE JSON :
+//   config.json utilise des sections imbriquées (nested).
+//   Newtonsoft.Json mappe automatiquement PascalCase C# ↔ camelCase JSON.
+//   Toute section absente du JSON est reconstruite avec les valeurs par défaut.
+//
+// FALLBACK :
+//   Si le fichier est absent ou malformé, LoadConfig retourne les valeurs
+//   par défaut sans lever d'exception. Les actions continuent normalement.
+//
+// AUCUNE logique métier — lecture et mapping uniquement
+// ============================================================
+
+
+// ----- Sous-sections de config.json -----
 
 public class XpConfig
 {
@@ -261,6 +661,27 @@ public class DebugConfig
     public bool Verbose { get; set; }
 }
 
+public class RewardsConfig
+{
+    public bool? BonusXpEnabled         { get; set; }
+    public float BonusXpMultiplier      { get; set; }
+    public int   BonusXpDurationMinutes { get; set; }
+    public bool? GrantXpEnabled         { get; set; }
+    public int   GrantXpAmount          { get; set; }
+}
+
+public class CheckInConfig
+{
+    public bool   Enabled             { get; set; }
+    public string ChannelPointName    { get; set; }
+    public int    XpPerCheckin        { get; set; }
+    public int    XpCardComplete      { get; set; }
+    public int    CardSize            { get; set; }
+    public int    AnimationDurationMs { get; set; }
+}
+
+// ----- Racine de config.json -----
+
 public class Config
 {
     public string            DataPath    { get; set; }
@@ -272,7 +693,11 @@ public class Config
     public RankConfig        Rank        { get; set; }
     public BotsConfig        Bots        { get; set; }
     public DebugConfig       Debug       { get; set; }
+    public RewardsConfig     Rewards     { get; set; }
+    public CheckInConfig     CheckIn     { get; set; }
 }
+
+// ----- Chargeur de configuration -----
 
 public class ConfigService
 {
@@ -332,6 +757,20 @@ public class ConfigService
         if (c.Bots.BroadcasterName == null)      c.Bots.BroadcasterName    = "";
 
         if (c.Debug == null) c.Debug = new DebugConfig();
+
+        if (c.Rewards == null) c.Rewards = new RewardsConfig();
+        if (!c.Rewards.BonusXpEnabled.HasValue)      c.Rewards.BonusXpEnabled         = true;
+        if (c.Rewards.BonusXpMultiplier      <= 0)   c.Rewards.BonusXpMultiplier      = 2.0f;
+        if (c.Rewards.BonusXpDurationMinutes <= 0)   c.Rewards.BonusXpDurationMinutes = 30;
+        if (!c.Rewards.GrantXpEnabled.HasValue)      c.Rewards.GrantXpEnabled          = true;
+        if (c.Rewards.GrantXpAmount          <= 0)   c.Rewards.GrantXpAmount           = 100;
+
+        if (c.CheckIn == null) c.CheckIn = new CheckInConfig();
+        if (string.IsNullOrEmpty(c.CheckIn.ChannelPointName)) c.CheckIn.ChannelPointName    = "Check-in";
+        if (c.CheckIn.XpPerCheckin        <= 0)               c.CheckIn.XpPerCheckin        = 10;
+        if (c.CheckIn.XpCardComplete      <= 0)               c.CheckIn.XpCardComplete      = 100;
+        if (c.CheckIn.CardSize            <= 0)               c.CheckIn.CardSize            = 10;
+        if (c.CheckIn.AnimationDurationMs <= 0)               c.CheckIn.AnimationDurationMs = 5000;
     }
 }
 
@@ -384,7 +823,7 @@ public class CPHInline
             return true;
         }
 
-        // 3. Construire le HashSet de présence depuis la liste SB
+        // 4. Construire le set de présence depuis la liste SB
         var presentSet = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         object rawUsers;
         if (args.TryGetValue("users", out rawUsers) && rawUsers != null)
@@ -421,11 +860,12 @@ public class CPHInline
             CPH.LogDebug("[XP_WatchTime_V2] args[users] absent — mode activité seule");
         }
 
-        // 4. Services
+        // 5. Services
         var bots         = new BotExclusionService(projectPath, config.Bots.BroadcasterName, config.Bots.ExcludeBroadcaster == true);
         var repo         = new UserRepository(config.DataPath);
         var xpService    = new XpService(repo);
         var watchService = new WatchTimeService();
+        var rewards      = new RewardService();
 
         var now                   = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var interval              = config.Watchtime.IntervalMinutes;
@@ -453,22 +893,17 @@ public class CPHInline
 
         var processed = 0; var xpTotal = 0; var levelUps = 0; var skipped = 0;
 
-        // 5. Boucle principale
+        // 6. Boucle principale
         foreach (var user in allUsers)
         {
-            // a. Bots exclus en premier — avant toute autre logique
             if (bots.IsExcluded(user.Username)) { skipped++; continue; }
-
-            // b. Cooldown anti-double : 1 seule attribution par cycle
             if (!watchService.IsEligible(user, interval, now)) { skipped++; continue; }
 
-            // c. Éligibilité hybride — au moins une source suffit
             var inPresenceList = presentSet.ContainsKey(user.Username);
             var recentChat     = (now - user.LastMessageTimestamp) <= activityWindowSeconds;
 
             if (!inPresenceList && !recentChat) { skipped++; continue; }
 
-            // d. WatchStreak — consécutivité des cycles
             if (streakEnabled)
             {
                 var prevGap = now - user.LastWatchTimestamp;
@@ -478,9 +913,10 @@ public class CPHInline
                                    : 1;
             }
 
-            // e. Attribution XP + watchtime (WatchStreak déjà mis à jour sur l'objet)
-            var bonus  = streakEnabled ? StreakBonus(user.WatchStreak) : 0;
-            var result = xpService.AddWatchTimeXp(user, xpAmount + bonus, interval, now);
+            var bonusMultiplier = rewards.GetCurrentMultiplier(user, now);
+            var baseXp          = xpAmount + (streakEnabled ? StreakBonus(user.WatchStreak) : 0);
+            var effectiveXp     = (int)Math.Round(baseXp * bonusMultiplier);
+            var result          = xpService.AddWatchTimeXp(user, effectiveXp, interval, now);
             if (result == null) { skipped++; continue; }
 
             processed++;
@@ -494,7 +930,7 @@ public class CPHInline
             }
         }
 
-        // 6. Exposer résultats
+        // 7. Exposer résultats
         CPH.SetArgument("watch_processed",      processed);
         CPH.SetArgument("watch_xp_distributed", xpTotal);
         CPH.SetArgument("watch_level_ups",      levelUps);
@@ -511,7 +947,6 @@ public class CPHInline
         return true;
     }
 
-    // Tente plusieurs clés connues pour extraire le login depuis le dict SB
     private static string ExtractUsername(Dictionary<string, object> user)
     {
         var keys = new string[] { "login", "userName", "username", "name", "user" };
@@ -527,13 +962,12 @@ public class CPHInline
         return null;
     }
 
-    // Bonus XP progressif basé sur la consécutivité des cycles (streak)
     private static int StreakBonus(int streak)
     {
-        if (streak >= 24) return 5;   // 2h+ consécutif
-        if (streak >= 12) return 3;   // 1h+ consécutif
-        if (streak >= 6)  return 2;   // 30 min+ consécutif
-        if (streak >= 3)  return 1;   // 15 min+ consécutif
+        if (streak >= 24) return 5;
+        if (streak >= 12) return 3;
+        if (streak >= 6)  return 2;
+        if (streak >= 3)  return 1;
         return 0;
     }
 }

@@ -4,21 +4,30 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : CARD_ShowProfile (V2)
+// ACTION : REWARD_GrantXp
 // ============================================================
-// RÔLE : Affiche la profile card OBS pour un viewer.
-//         Les comptes exclus (bots) sont silencieusement ignorés.
+// RÔLE : Octroyer un montant fixe d'XP à un viewer
+//         suite au rachat d'un Channel Point.
 //
 // INSTALLATION DANS STREAMER.BOT :
-//   1. Actions → Add Action → nommer "CARD_ShowProfile"
-//   2. Déclencheur : Twitch → Channel Point Redemption
-//   3. Sub-Action : Execute C# Code → coller ce fichier
-//   4. Compiler et sauvegarder
+//   1. Actions → Add Action → nommer "REWARD_GrantXp"
+//   2. Déclencheur : Twitch → Channel Point Redemption → "Bonus XP"
+//   3. Sub-Action 1 : Run Action → USER_GetOrCreate
+//   4. Sub-Action 2 : Execute C# Code → coller ce fichier
+//   5. Compiler et sauvegarder
 //
 // PRÉREQUIS :
 //   xp_configPath  string  Persistante : oui
 //
-// LECTURE SEULE — aucune écriture — aucune modification
+// ARGUMENTS ENTRANTS :
+//   args["user_username"]   — login Twitch (posé par USER_GetOrCreate)
+//   args["user_excluded"]   — bool (posé par USER_GetOrCreate)
+//
+// ARGUMENTS SORTANTS :
+//   %reward_xp_granted%   int    — XP octroyé
+//   %reward_xp_total%     int    — XP total après ajout
+//   %reward_isLevelUp%    bool   — true si montée de niveau
+//   %reward_message%      string — message de confirmation envoyé
 // ============================================================
 
 // ----- UserRepository (source : scripts/UserRepository.cs) -----
@@ -357,163 +366,6 @@ public class XpService
     private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }
 
-// ----- TitleService (source : scripts/TitleService.cs) -----
-
-// ============================================================
-// TitleService.cs — Streamer.bot XP System
-// ============================================================
-// RESPONSABILITÉ :
-//   Charger et résoudre les titres associés aux niveaux.
-//   Chaque niveau correspond au titre de la tranche dont il fait partie.
-//
-// ORDRE DE PRIORITÉ DU CHARGEMENT :
-//   1. configs/titles.json           ← surcharge utilisateur (priorité absolue)
-//   2. themes/{theme}/titles.json    ← titres du thème courant
-//   3. themes/default/titles.json    ← titres par défaut
-//   4. Fallback codé en dur          ← jamais en échec
-//
-// RÈGLE DE RÉSOLUTION :
-//   Le titre retourné est celui dont MinLevel est le plus grand
-//   parmi ceux dont MinLevel ≤ niveau du viewer.
-//
-// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
-// ============================================================
-
-
-public class TitleEntry
-{
-    public int    MinLevel { get; set; }
-    public string Title    { get; set; }
-}
-
-public class TitleService
-{
-    public string GetTitle(int level, string projectPath, string theme)
-    {
-        var titles = LoadTitles(projectPath, theme);
-        return ResolveTitle(level, titles);
-    }
-
-    public List<TitleEntry> LoadTitles(string projectPath, string theme)
-    {
-        var user = TryLoadFile(Path.Combine(projectPath, "configs", "titles.json"));
-        if (user != null) return user;
-
-        if (!string.IsNullOrEmpty(theme) &&
-            !string.Equals(theme, "default", StringComparison.OrdinalIgnoreCase))
-        {
-            var t = TryLoadFile(Path.Combine(projectPath, "themes", theme, "titles.json"));
-            if (t != null) return t;
-        }
-
-        var def = TryLoadFile(Path.Combine(projectPath, "themes", "default", "titles.json"));
-        if (def != null) return def;
-
-        var fallback = new List<TitleEntry>();
-        fallback.Add(new TitleEntry { MinLevel = 1, Title = "Viewer" });
-        return fallback;
-    }
-
-    private string ResolveTitle(int level, List<TitleEntry> titles)
-    {
-        var candidates = new List<TitleEntry>();
-        foreach (var t in titles)
-            if (t.MinLevel >= 1 && !string.IsNullOrEmpty(t.Title))
-                candidates.Add(t);
-        candidates.Sort((a, b) => b.MinLevel.CompareTo(a.MinLevel));
-        foreach (var e in candidates)
-            if (level >= e.MinLevel) return e.Title;
-        if (candidates.Count > 0)
-            return candidates[candidates.Count - 1].Title;
-        return "";
-    }
-
-    private List<TitleEntry> TryLoadFile(string path)
-    {
-        if (!File.Exists(path)) return null;
-        try
-        {
-            var entries = JsonConvert.DeserializeObject<List<TitleEntry>>(File.ReadAllText(path));
-            if (entries == null || entries.Count == 0) return null;
-            var valid = new List<TitleEntry>();
-            foreach (var e in entries)
-                if (e.MinLevel >= 1 && !string.IsNullOrEmpty(e.Title))
-                    valid.Add(e);
-            return valid.Count > 0 ? valid : null;
-        }
-        catch { return null; }
-    }
-}
-
-// ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
-
-// ============================================================
-// BotExclusionService.cs — Streamer.bot XP System
-// ============================================================
-// RESPONSABILITÉ :
-//   Charger et vérifier la liste des comptes exclus du système XP.
-//   Aucun exclu ne gagne d'XP, n'apparaît dans le leaderboard,
-//   ne peut afficher de profile card ni répondre à !rank.
-//
-// SOURCES D'EXCLUSION (priorité) :
-//   1. configs/excluded-users.json     ← liste personnalisée utilisateur
-//   2. Si config.excludeBroadcaster = true et config.broadcasterName renseigné
-//      → le streamer est automatiquement exclu
-//   3. Fallback codé en dur si le fichier JSON est absent ou vide
-//
-// COMPARAISON : insensible à la casse (OrdinalIgnoreCase)
-//   "NightBot", "nightbot", "NIGHTBOT" → même compte
-//
-// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
-// ============================================================
-
-
-public class BotExclusionService
-{
-    private readonly Dictionary<string, bool> _excluded;
-
-    public BotExclusionService(string projectPath, string broadcasterName, bool excludeBroadcaster)
-    {
-        _excluded = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        Load(projectPath);
-        if (excludeBroadcaster && !string.IsNullOrEmpty(broadcasterName))
-            _excluded[broadcasterName.Trim()] = true;
-    }
-
-    public bool IsExcluded(string username)
-    {
-        if (string.IsNullOrEmpty(username)) return true;
-        return _excluded.ContainsKey(username.Trim());
-    }
-
-    private void Load(string projectPath)
-    {
-        var path = Path.Combine(projectPath, "configs", "excluded-users.json");
-        if (File.Exists(path))
-        {
-            try
-            {
-                var list = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(path));
-                if (list != null)
-                    foreach (var name in list)
-                        if (!string.IsNullOrWhiteSpace(name))
-                            _excluded[name.Trim()] = true;
-                // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
-                if (_excluded.Count > 0) return;
-            }
-            catch { }
-        }
-        _excluded["nightbot"]      = true;
-        _excluded["streamelements"] = true;
-        _excluded["streamlabs"]    = true;
-        _excluded["moobot"]        = true;
-        _excluded["fossabot"]      = true;
-        _excluded["wizebot"]       = true;
-        _excluded["mixitupbot"]    = true;
-        _excluded["streamerbot"]   = true;
-    }
-}
-
 // ----- ConfigService (source : scripts/ConfigService.cs) -----
 
 // ============================================================
@@ -704,259 +556,64 @@ public class ConfigService
     }
 }
 
-// ----- RewardService (source : scripts/RewardService.cs) -----
-
-// ============================================================
-// RewardService.cs — Streamer.bot XP System
-// ============================================================
-// RESPONSABILITÉ :
-//   Gérer le cycle de vie du multiplicateur XP temporaire.
-//   Ne lit et n'écrit jamais le disque directement.
-//   Délègue la persistance à l'action appelante.
-//
-// UTILISATION :
-//   var rewards = new RewardService();
-//   var multiplier = rewards.GetCurrentMultiplier(user, now);
-//   var result = rewards.ApplyBonus(user, 2.0f, 30, now);
-//   repo.SaveUser(user); // ← sauvegarder APRÈS ApplyBonus
-//
-// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
-// ============================================================
-
-public class BonusResult
-{
-    public float MultiplierApplied { get; set; }
-    public long  ExpiresAt         { get; set; }
-    public bool  WasAlreadyActive  { get; set; }
-    public int   ExpiresInMinutes  { get; set; }
-}
-
-public class RewardService
-{
-    // Retourne le multiplicateur actif.
-    // Si le bonus est expiré, remet le profil à 1.0 (lazy cleanup) — NE SAUVEGARDE PAS.
-    // L'action appelante doit sauvegarder si le profil a été modifié.
-    public float GetCurrentMultiplier(UserProfile user, long nowSeconds)
-    {
-        if (user == null) return 1.0f;
-        if (user.BonusExpiryTimestamp <= 0) return 1.0f;
-        if (nowSeconds >= user.BonusExpiryTimestamp)
-        {
-            user.ActiveBonusMultiplier = 1.0f;
-            user.BonusExpiryTimestamp  = 0;
-            return 1.0f;
-        }
-        return user.ActiveBonusMultiplier > 1.0f ? user.ActiveBonusMultiplier : 1.0f;
-    }
-
-    public bool IsBonusActive(UserProfile user, long nowSeconds)
-    {
-        if (user == null) return false;
-        return user.ActiveBonusMultiplier > 1.0f
-            && user.BonusExpiryTimestamp > 0
-            && nowSeconds < user.BonusExpiryTimestamp;
-    }
-
-    // Active un multiplicateur sur le profil. Ne sauvegarde pas.
-    // L'action appelante doit appeler SaveUser() après.
-    public BonusResult ApplyBonus(UserProfile user, float multiplier, int durationMinutes, long nowSeconds)
-    {
-        var wasActive = IsBonusActive(user, nowSeconds);
-        user.ActiveBonusMultiplier = multiplier;
-        user.BonusExpiryTimestamp  = nowSeconds + (long)(durationMinutes * 60);
-
-        var minutesRemaining = (int)((user.BonusExpiryTimestamp - nowSeconds) / 60);
-
-        return new BonusResult
-        {
-            MultiplierApplied = multiplier,
-            ExpiresAt         = user.BonusExpiryTimestamp,
-            WasAlreadyActive  = wasActive,
-            ExpiresInMinutes  = minutesRemaining
-        };
-    }
-
-    public int GetMinutesRemaining(UserProfile user, long nowSeconds)
-    {
-        if (!IsBonusActive(user, nowSeconds)) return 0;
-        var seconds = user.BonusExpiryTimestamp - nowSeconds;
-        return seconds > 0 ? (int)(seconds / 60) : 0;
-    }
-}
-
 // ----- Action Streamer.bot -----
-
-public class LeaderboardCache
-{
-    public long              CachedAt { get; set; }
-    public List<CachedPlayer> Players  { get; set; }
-}
-
-public class CachedPlayer
-{
-    public int    rank     { get; set; }
-    public string username { get; set; }
-    public int    level    { get; set; }
-    public int    xp       { get; set; }
-    public string avatar   { get; set; }
-}
-
-// Payload WebSocket profile card — sérialisé en JSON vers l'overlay
-public class CardPayload
-{
-    public string username  { get; set; }
-    public string avatar    { get; set; }
-    public int    level     { get; set; }
-    public int    xpCurrent { get; set; }
-    public int    xpForNext { get; set; }
-    public int    rank      { get; set; }
-    public string title     { get; set; }
-    public int    messages         { get; set; }
-    public int    watchTime        { get; set; }
-    public bool   bonusActive      { get; set; }
-    public float  bonusMultiplier  { get; set; }
-    public int    bonusMinutesLeft { get; set; }
-}
 
 public class CPHInline
 {
     public bool Execute()
     {
-        // 1. Identité
-        if (!args.ContainsKey("userName") || args["userName"] == null)
+        // 1. Vérifier exclusion
+        var excluded = args.ContainsKey("user_excluded")
+                       && args["user_excluded"] != null
+                       && (bool)args["user_excluded"] == true;
+        if (excluded) return true;
+
+        // 2. Username
+        if (!args.ContainsKey("user_username") || args["user_username"] == null)
         {
-            CPH.LogWarn("[CARD_ShowProfile] userName absent des args");
+            CPH.LogWarn("[REWARD_GrantXp] user_username absent — USER_GetOrCreate requis");
             return false;
         }
+        var username = args["user_username"].ToString();
 
-        var username    = args["userName"].ToString().Trim();
-        var displayName = args.ContainsKey("userDisplayName") && args["userDisplayName"] != null
-                              ? args["userDisplayName"].ToString().Trim()
-                              : username;
+        // 3. Configuration
+        var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+        var config     = new ConfigService(CPH).LoadConfig(configPath);
 
-        if (string.IsNullOrEmpty(username)) { CPH.LogWarn("[CARD_ShowProfile] userName vide"); return false; }
-
-        // 2. Configuration + chemins
-        var configPath  = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config      = new ConfigService(CPH).LoadConfig(configPath);
-        var configDir   = Path.GetDirectoryName(configPath ?? "");
-        var projectPath = Path.GetDirectoryName(configDir ?? "");
-
-        if (string.IsNullOrEmpty(config.DataPath))
+        if (config.Rewards.GrantXpEnabled != true)
         {
-            CPH.LogWarn("[CARD_ShowProfile] dataPath non configuré");
-            return false;
-        }
-
-        // 3. Vérification exclusion
-        var bots = new BotExclusionService(
-            projectPath,
-            config.Bots.BroadcasterName,
-            config.Bots.ExcludeBroadcaster == true);
-
-        if (bots.IsExcluded(username))
-        {
-            if (config.Debug.Verbose)
-                CPH.LogInfo("[CARD_ShowProfile] Bot exclu, card ignoree pour : " + username);
-            CPH.SetArgument("card_sent", false);
+            CPH.LogInfo("[REWARD_GrantXp] Feature desactivee dans config.json");
+            CPH.SetArgument("reward_xp_granted", 0);
             return true;
         }
 
-        // 4. Profil viewer
+        // 4. Charger profil
         var repo = new UserRepository(config.DataPath);
         var user = repo.LoadUser(username);
 
         if (user == null)
         {
-            CPH.LogWarn("[CARD_ShowProfile] Profil introuvable pour '" + username + "'");
-            CPH.SetArgument("card_sent", false);
-            return true;
+            CPH.LogWarn("[REWARD_GrantXp] Profil introuvable pour '" + username + "'");
+            return false;
         }
 
-        // 5. Rang live — cache leaderboard prioritaire, fallback scan complet
-        var cacheJson = CPH.GetGlobalVar<string>("xp_leaderboard_cache", false);
-        var maxAge    = (long)(config.Leaderboard.IntervalMinutes * 60 * 1.5);
-        var liveRank  = GetRankFromCache(username, cacheJson, maxAge);
+        // 5. Octroyer XP
+        var xpService = new XpService(repo);
+        var xpResult  = xpService.AddXp(user, config.Rewards.GrantXpAmount, "reward");
 
-        if (liveRank == 0)
-        {
-            var allUsers = repo.GetAllUsers();
-            var filtered = new List<UserProfile>();
-            foreach (var u in allUsers)
-                if (!bots.IsExcluded(u.Username))
-                    filtered.Add(u);
+        // 6. Message chat
+        var displayName = string.IsNullOrEmpty(user.DisplayName) ? username : user.DisplayName;
+        var message     = "@" + displayName + " — Bonus XP ! +" + config.Rewards.GrantXpAmount + " XP PogChamp";
 
-            filtered.Sort((a, b) => {
-                if (b.Level    != a.Level)    return b.Level.CompareTo(a.Level);
-                if (b.Xp       != a.Xp)       return b.Xp.CompareTo(a.Xp);
-                return b.WatchTime.CompareTo(a.WatchTime);
-            });
+        CPH.SendMessage(message);
+        CPH.LogInfo("[REWARD_GrantXp] " + username + " — +" + config.Rewards.GrantXpAmount + " XP");
 
-            for (var i = 0; i < filtered.Count; i++)
-                if (string.Equals(filtered[i].Username, username, StringComparison.OrdinalIgnoreCase))
-                { liveRank = i + 1; break; }
-        }
-
-        // 6. Progression XP + titre
-        var progress = new XpService(repo).GetProgress(user);
-        var title    = new TitleService().GetTitle(user.Level, projectPath, config.Theme);
-
-        // 7. Payload V2 enrichie
-        var rewardService  = new RewardService();
-        var now            = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var bonusActive    = rewardService.IsBonusActive(user, now);
-        var multiplier     = bonusActive ? user.ActiveBonusMultiplier : 1.0f;
-        var minutesLeft    = rewardService.GetMinutesRemaining(user, now);
-
-        var name    = string.IsNullOrEmpty(user.DisplayName) ? displayName : user.DisplayName;
-        var payload = new CardPayload
-        {
-            username         = name,
-            avatar           = "",
-            level            = user.Level,
-            xpCurrent        = progress.XpIntoLevel,
-            xpForNext        = progress.XpForNext,
-            rank             = liveRank,
-            title            = title,
-            messages         = user.Messages,
-            watchTime        = user.WatchTime,
-            bonusActive      = bonusActive,
-            bonusMultiplier  = multiplier,
-            bonusMinutesLeft = minutesLeft
-        };
-
-        // 8. Diffuser via WebSocket
-        CPH.WebsocketBroadcastJson(JsonConvert.SerializeObject(new { @event = "showCard", card = payload }));
-
-        CPH.LogInfo("[CARD_ShowProfile] " + name + " (" + title + ") | Niv." + user.Level + " | Rang #" + liveRank);
-
-        // 9. Exposer
-        CPH.SetArgument("card_sent",      true);
-        CPH.SetArgument("card_username",  name);
-        CPH.SetArgument("card_level",     user.Level);
-        CPH.SetArgument("card_xp",        user.Xp);
-        CPH.SetArgument("card_rank",      liveRank);
-        CPH.SetArgument("card_title",     title);
-        CPH.SetArgument("card_messages",  user.Messages);
-        CPH.SetArgument("card_watchtime", user.WatchTime);
+        // 7. Exposer
+        CPH.SetArgument("reward_xp_granted", xpResult.XpAdded);
+        CPH.SetArgument("reward_xp_total",   xpResult.TotalXp);
+        CPH.SetArgument("reward_isLevelUp",  xpResult.IsLevelUp);
+        CPH.SetArgument("reward_message",    message);
 
         return true;
-    }
-
-    private static int GetRankFromCache(string username, string cacheJson, long maxAgeSeconds)
-    {
-        if (string.IsNullOrEmpty(cacheJson)) return 0;
-        try
-        {
-            var cache = JsonConvert.DeserializeObject<LeaderboardCache>(cacheJson);
-            if (cache == null || cache.Players == null) return 0;
-            var cacheAge = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - cache.CachedAt;
-            if (cacheAge > maxAgeSeconds) return 0;
-            foreach (var p in cache.Players)
-                if (string.Equals(p.username, username, StringComparison.OrdinalIgnoreCase))
-                    return p.rank;
-            return 0;
-        }
-        catch { return 0; }
     }
 }

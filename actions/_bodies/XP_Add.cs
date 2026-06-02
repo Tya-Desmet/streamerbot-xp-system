@@ -65,24 +65,35 @@ public class CPHInline
             return false;
         }
 
-        // 7. Ajout XP + Messages + timestamp en un seul SaveUser
+        // 7. Vérifier bonus actif + calculer XP effectif
+        var rewards     = new RewardService();
+        var now         = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var multiplier  = rewards.GetCurrentMultiplier(user, now);
+        var effectiveXp = (int)Math.Round(config.Xp.PerMessage * multiplier);
+
         var xpService = new XpService(repo);
-        var xpResult  = xpService.AddXp(user, config.Xp.PerMessage);
+        var xpResult  = xpService.AddXp(user, effectiveXp, "chat");
 
         // 8. Progression XP dans le niveau (user déjà en mémoire — zéro I/O)
         var progress = xpService.GetProgress(user);
 
         // 9. Exposer les résultats
-        CPH.SetArgument("xp_skipped",     false);
-        CPH.SetArgument("xp_skipReason",  "");
-        CPH.SetArgument("xp_added",       xpResult.XpAdded);
-        CPH.SetArgument("xp_total",       xpResult.TotalXp);
-        CPH.SetArgument("xp_oldLevel",    xpResult.OldLevel);
-        CPH.SetArgument("xp_newLevel",    xpResult.NewLevel);
-        CPH.SetArgument("xp_isLevelUp",   xpResult.IsLevelUp);
-        CPH.SetArgument("xp_xpIntoLevel", progress.XpIntoLevel);
-        CPH.SetArgument("xp_xpForNext",   progress.XpForNext);
-        CPH.SetArgument("xp_percentage",  progress.Percentage);
+        CPH.SetArgument("xp_skipped",      false);
+        CPH.SetArgument("xp_skipReason",   "");
+        CPH.SetArgument("xp_added",        xpResult.XpAdded);
+        CPH.SetArgument("xp_total",        xpResult.TotalXp);
+        CPH.SetArgument("xp_oldLevel",     xpResult.OldLevel);
+        CPH.SetArgument("xp_newLevel",     xpResult.NewLevel);
+        CPH.SetArgument("xp_isLevelUp",    xpResult.IsLevelUp);
+        CPH.SetArgument("xp_xpIntoLevel",  progress.XpIntoLevel);
+        CPH.SetArgument("xp_xpForNext",    progress.XpForNext);
+        CPH.SetArgument("xp_percentage",   progress.Percentage);
+        CPH.SetArgument("xp_multiplier",   multiplier);
+        CPH.SetArgument("xp_effective",    effectiveXp);
+        CPH.SetArgument("xp_from_chat",    user.XpFromChat);
+        CPH.SetArgument("xp_from_watch",   user.XpFromWatch);
+        CPH.SetArgument("xp_from_rewards", user.XpFromRewards);
+        CPH.SetArgument("xp_bonus_active", multiplier > 1.0f);
 
         if (xpResult.IsLevelUp)
             CPH.LogInfo("[XP_Add] LEVEL UP ! " + username + " : Niv. " + xpResult.OldLevel + " -> " + xpResult.NewLevel);

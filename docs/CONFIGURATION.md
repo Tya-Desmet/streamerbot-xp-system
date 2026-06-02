@@ -139,6 +139,31 @@ Les bots standards sont dans `configs/excluded-users.json`. Cette section gère 
 
 ---
 
+## Section `rewards`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `bonusXpEnabled` | bool | `true` | Active la feature Double XP Channel Point. |
+| `bonusXpMultiplier` | float | `2.0` | Multiplicateur appliqué (ex: 2.0 = double XP). |
+| `bonusXpDurationMinutes` | int | `30` | Durée du bonus en minutes. |
+| `grantXpEnabled` | bool | `true` | Active la feature Bonus XP Channel Point. |
+| `grantXpAmount` | int | `100` | Montant d'XP octroyé par rachat. |
+
+---
+
+## Section `checkIn`
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `enabled` | bool | `false` | Active le système de check-in quotidien. Doit être `true` pour fonctionner. |
+| `channelPointName` | string | `"Check-in"` | Nom du Channel Point Twitch (doit correspondre exactement). |
+| `xpPerCheckin` | int | `10` | XP par case cochée. |
+| `xpCardComplete` | int | `100` | XP bonus quand la carte est complète (cardSize cases). |
+| `cardSize` | int | `10` | Nombre de cases sur la carte de fidélité. |
+| `animationDurationMs` | int | `5000` | Durée de l'animation overlay check-in (ms). |
+
+---
+
 ## Comportement des valeurs manquantes
 
 Si un champ est absent du JSON, `ConfigService` applique automatiquement la valeur par défaut. Si une section entière est absente (`"watchtime"` manquant par exemple), elle est recréée avec tous ses défauts. **La configuration n'a pas besoin d'être complète pour fonctionner.**

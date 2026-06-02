@@ -37,5 +37,22 @@
 
   "debug": {
     "verbose": false
+  },
+
+  "rewards": {
+    "bonusXpEnabled":         true,
+    "bonusXpMultiplier":      2.0,
+    "bonusXpDurationMinutes": 30,
+    "grantXpEnabled":         true,
+    "grantXpAmount":          100
+  },
+
+  "checkIn": {
+    "enabled":             true,
+    "channelPointName":    "Check-in",
+    "xpPerCheckin":        10,
+    "xpCardComplete":      100,
+    "cardSize":            10,
+    "animationDurationMs": 5000
   }
 }

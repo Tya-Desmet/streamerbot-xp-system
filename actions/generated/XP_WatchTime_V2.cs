@@ -1,3 +1,8 @@
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+
 // ============================================================
 // ACTION : XP_WatchTime_V2
 // ============================================================
@@ -36,12 +41,6 @@
 //   • A chatté dans les 2× intervalles précédents (LastMessageTimestamp)
 // ============================================================
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-
-
 // ----- UserRepository (source : scripts/UserRepository.cs) -----
 
 // ============================================================
@@ -64,10 +63,6 @@ using Newtonsoft.Json;
 //   }
 // ============================================================
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
 
 // Modèle utilisateur — structure exacte du JSON sur disque
 // Champs alignés avec /data/users/{username}.json (voir README)
@@ -82,6 +77,14 @@ public class UserProfile
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
     public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
+    public int    XpFromChat             { get; set; }
+    public int    XpFromWatch            { get; set; }
+    public int    XpFromRewards          { get; set; }
+    public float  ActiveBonusMultiplier  { get; set; } = 1.0f;
+    public long   BonusExpiryTimestamp   { get; set; }
+    public int    CheckInCount           { get; set; }
+    public int    LastCheckInDay         { get; set; }
+    public int    TotalCheckIns          { get; set; }
 }
 
 // Repository — lecture et écriture JSON uniquement
@@ -113,7 +116,6 @@ public class UserRepository
             Level                = 1,
             Messages             = 0,
             WatchTime            = 0,
-            Rank                 = 0,
             LastMessageTimestamp = 0,
             LastWatchTimestamp   = 0,
             WatchStreak          = 0
@@ -196,7 +198,6 @@ public class UserRepository
     }
 }
 
-
 // ----- WatchTimeService (source : scripts/WatchTimeService.cs) -----
 
 // ============================================================
@@ -262,7 +263,6 @@ public class WatchTimeService
     }
 }
 
-
 // ----- XpService (source : scripts/XpService.cs) -----
 
 // ============================================================
@@ -281,8 +281,6 @@ public class WatchTimeService
 //   Coller les 4 classes + XpService au-dessus de CPHInline.
 // ============================================================
 
-using System;
-using System.Collections.Generic;
 
 // Résultat retourné par AddXp — consommé par l'action Streamer.bot pour les overlays
 public class XpResult
@@ -323,16 +321,24 @@ public class XpService
     public XpService(UserRepository repo) { _repo = repo; }
 
     // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
-    // Inclut Messages++ et LastMessageTimestamp — une seule écriture disque
-    public XpResult AddXp(UserProfile user, int amount)
+    // source : "chat" | "watchtime" | "reward"
+    public XpResult AddXp(UserProfile user, int amount, string source)
     {
         if (user == null) return null;
 
-        var oldLevel              = user.Level;
-        user.Xp                  += amount;
-        user.Level                = CalculateLevel(user.Xp);
-        user.Messages++;
-        user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var oldLevel = user.Level;
+        user.Xp     += amount;
+        user.Level   = CalculateLevel(user.Xp);
+
+        if (source == "chat")
+        {
+            user.Messages++;
+            user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            user.XpFromChat          += amount;
+        }
+        else if (source == "watchtime") { user.XpFromWatch   += amount; }
+        else if (source == "reward")    { user.XpFromRewards  += amount; }
+
         _repo.SaveUser(user);
 
         return new XpResult
@@ -358,6 +364,7 @@ public class XpService
         user.Level               = CalculateLevel(user.Xp);
         user.WatchTime          += intervalMinutes;
         user.LastWatchTimestamp  = nowSeconds;
+        user.XpFromWatch        += amount;
         _repo.SaveUser(user);
 
         return new XpResult
@@ -435,6 +442,85 @@ public class XpService
     private int XpForNextLevel(int level) => (int)(100 * Math.Pow(level, 1.5));
 }
 
+// ----- RewardService (source : scripts/RewardService.cs) -----
+
+// ============================================================
+// RewardService.cs — Streamer.bot XP System
+// ============================================================
+// RESPONSABILITÉ :
+//   Gérer le cycle de vie du multiplicateur XP temporaire.
+//   Ne lit et n'écrit jamais le disque directement.
+//   Délègue la persistance à l'action appelante.
+//
+// UTILISATION :
+//   var rewards = new RewardService();
+//   var multiplier = rewards.GetCurrentMultiplier(user, now);
+//   var result = rewards.ApplyBonus(user, 2.0f, 30, now);
+//   repo.SaveUser(user); // ← sauvegarder APRÈS ApplyBonus
+//
+// AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
+// ============================================================
+
+public class BonusResult
+{
+    public float MultiplierApplied { get; set; }
+    public long  ExpiresAt         { get; set; }
+    public bool  WasAlreadyActive  { get; set; }
+    public int   ExpiresInMinutes  { get; set; }
+}
+
+public class RewardService
+{
+    // Retourne le multiplicateur actif.
+    // Si le bonus est expiré, remet le profil à 1.0 (lazy cleanup) — NE SAUVEGARDE PAS.
+    // L'action appelante doit sauvegarder si le profil a été modifié.
+    public float GetCurrentMultiplier(UserProfile user, long nowSeconds)
+    {
+        if (user == null) return 1.0f;
+        if (user.BonusExpiryTimestamp <= 0) return 1.0f;
+        if (nowSeconds >= user.BonusExpiryTimestamp)
+        {
+            user.ActiveBonusMultiplier = 1.0f;
+            user.BonusExpiryTimestamp  = 0;
+            return 1.0f;
+        }
+        return user.ActiveBonusMultiplier > 1.0f ? user.ActiveBonusMultiplier : 1.0f;
+    }
+
+    public bool IsBonusActive(UserProfile user, long nowSeconds)
+    {
+        if (user == null) return false;
+        return user.ActiveBonusMultiplier > 1.0f
+            && user.BonusExpiryTimestamp > 0
+            && nowSeconds < user.BonusExpiryTimestamp;
+    }
+
+    // Active un multiplicateur sur le profil. Ne sauvegarde pas.
+    // L'action appelante doit appeler SaveUser() après.
+    public BonusResult ApplyBonus(UserProfile user, float multiplier, int durationMinutes, long nowSeconds)
+    {
+        var wasActive = IsBonusActive(user, nowSeconds);
+        user.ActiveBonusMultiplier = multiplier;
+        user.BonusExpiryTimestamp  = nowSeconds + (long)(durationMinutes * 60);
+
+        var minutesRemaining = (int)((user.BonusExpiryTimestamp - nowSeconds) / 60);
+
+        return new BonusResult
+        {
+            MultiplierApplied = multiplier,
+            ExpiresAt         = user.BonusExpiryTimestamp,
+            WasAlreadyActive  = wasActive,
+            ExpiresInMinutes  = minutesRemaining
+        };
+    }
+
+    public int GetMinutesRemaining(UserProfile user, long nowSeconds)
+    {
+        if (!IsBonusActive(user, nowSeconds)) return 0;
+        var seconds = user.BonusExpiryTimestamp - nowSeconds;
+        return seconds > 0 ? (int)(seconds / 60) : 0;
+    }
+}
 
 // ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
 
@@ -458,10 +544,6 @@ public class XpService
 // AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
 // ============================================================
 
-using System;
-using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
 
 public class BotExclusionService
 {
@@ -509,7 +591,6 @@ public class BotExclusionService
     }
 }
 
-
 // ----- ConfigService (source : scripts/ConfigService.cs) -----
 
 // ============================================================
@@ -540,9 +621,6 @@ public class BotExclusionService
 // AUCUNE logique métier — lecture et mapping uniquement
 // ============================================================
 
-using System;
-using System.IO;
-using Newtonsoft.Json;
 
 // ----- Sous-sections de config.json -----
 
@@ -590,6 +668,25 @@ public class DebugConfig
     public bool Verbose { get; set; }
 }
 
+public class RewardsConfig
+{
+    public bool? BonusXpEnabled         { get; set; }
+    public float BonusXpMultiplier      { get; set; }
+    public int   BonusXpDurationMinutes { get; set; }
+    public bool? GrantXpEnabled         { get; set; }
+    public int   GrantXpAmount          { get; set; }
+}
+
+public class CheckInConfig
+{
+    public bool   Enabled             { get; set; }
+    public string ChannelPointName    { get; set; }
+    public int    XpPerCheckin        { get; set; }
+    public int    XpCardComplete      { get; set; }
+    public int    CardSize            { get; set; }
+    public int    AnimationDurationMs { get; set; }
+}
+
 // ----- Racine de config.json -----
 
 public class Config
@@ -603,6 +700,8 @@ public class Config
     public RankConfig        Rank        { get; set; }
     public BotsConfig        Bots        { get; set; }
     public DebugConfig       Debug       { get; set; }
+    public RewardsConfig     Rewards     { get; set; }
+    public CheckInConfig     CheckIn     { get; set; }
 }
 
 // ----- Chargeur de configuration -----
@@ -665,9 +764,22 @@ public class ConfigService
         if (c.Bots.BroadcasterName == null)      c.Bots.BroadcasterName    = "";
 
         if (c.Debug == null) c.Debug = new DebugConfig();
+
+        if (c.Rewards == null) c.Rewards = new RewardsConfig();
+        if (!c.Rewards.BonusXpEnabled.HasValue)      c.Rewards.BonusXpEnabled         = true;
+        if (c.Rewards.BonusXpMultiplier      <= 0)   c.Rewards.BonusXpMultiplier      = 2.0f;
+        if (c.Rewards.BonusXpDurationMinutes <= 0)   c.Rewards.BonusXpDurationMinutes = 30;
+        if (!c.Rewards.GrantXpEnabled.HasValue)      c.Rewards.GrantXpEnabled          = true;
+        if (c.Rewards.GrantXpAmount          <= 0)   c.Rewards.GrantXpAmount           = 100;
+
+        if (c.CheckIn == null) c.CheckIn = new CheckInConfig();
+        if (string.IsNullOrEmpty(c.CheckIn.ChannelPointName)) c.CheckIn.ChannelPointName    = "Check-in";
+        if (c.CheckIn.XpPerCheckin        <= 0)               c.CheckIn.XpPerCheckin        = 10;
+        if (c.CheckIn.XpCardComplete      <= 0)               c.CheckIn.XpCardComplete      = 100;
+        if (c.CheckIn.CardSize            <= 0)               c.CheckIn.CardSize            = 10;
+        if (c.CheckIn.AnimationDurationMs <= 0)               c.CheckIn.AnimationDurationMs = 5000;
     }
 }
-
 
 // ----- Action Streamer.bot -----
 
@@ -760,6 +872,7 @@ public class CPHInline
         var repo         = new UserRepository(config.DataPath);
         var xpService    = new XpService(repo);
         var watchService = new WatchTimeService();
+        var rewards      = new RewardService();
 
         var now                   = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var interval              = config.Watchtime.IntervalMinutes;
@@ -807,8 +920,10 @@ public class CPHInline
                                    : 1;
             }
 
-            var bonus  = streakEnabled ? StreakBonus(user.WatchStreak) : 0;
-            var result = xpService.AddWatchTimeXp(user, xpAmount + bonus, interval, now);
+            var bonusMultiplier = rewards.GetCurrentMultiplier(user, now);
+            var baseXp          = xpAmount + (streakEnabled ? StreakBonus(user.WatchStreak) : 0);
+            var effectiveXp     = (int)Math.Round(baseXp * bonusMultiplier);
+            var result          = xpService.AddWatchTimeXp(user, effectiveXp, interval, now);
             if (result == null) { skipped++; continue; }
 
             processed++;
@@ -863,4 +978,3 @@ public class CPHInline
         return 0;
     }
 }
-

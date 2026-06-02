@@ -297,3 +297,31 @@ html, body {
 .card.leaving {
   animation: cardOut var(--dur-out) ease-in forwards;
 }
+
+/* ===== BADGE BONUS XP ===== */
+.bonus-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: rgba(255, 200, 50, 0.15);
+  border: 1px solid rgba(255, 200, 50, 0.35);
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.bonus-badge.hidden {
+  display: none;
+}
+
+.bonus-icon {
+  font-size: 0.75rem;
+}
+
+.bonus-text {
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 200, 50, 0.9);
+  letter-spacing: 0.05em;
+}

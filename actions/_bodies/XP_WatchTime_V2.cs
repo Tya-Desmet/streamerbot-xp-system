@@ -87,6 +87,7 @@ public class CPHInline
         var repo         = new UserRepository(config.DataPath);
         var xpService    = new XpService(repo);
         var watchService = new WatchTimeService();
+        var rewards      = new RewardService();
 
         var now                   = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var interval              = config.Watchtime.IntervalMinutes;
@@ -134,8 +135,10 @@ public class CPHInline
                                    : 1;
             }
 
-            var bonus  = streakEnabled ? StreakBonus(user.WatchStreak) : 0;
-            var result = xpService.AddWatchTimeXp(user, xpAmount + bonus, interval, now);
+            var bonusMultiplier = rewards.GetCurrentMultiplier(user, now);
+            var baseXp          = xpAmount + (streakEnabled ? StreakBonus(user.WatchStreak) : 0);
+            var effectiveXp     = (int)Math.Round(baseXp * bonusMultiplier);
+            var result          = xpService.AddWatchTimeXp(user, effectiveXp, interval, now);
             if (result == null) { skipped++; continue; }
 
             processed++;

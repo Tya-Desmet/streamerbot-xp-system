@@ -56,16 +56,24 @@ public class XpService
     public XpService(UserRepository repo) { _repo = repo; }
 
     // GATEWAY PRINCIPAL — seule méthode autorisée à modifier le XP d'un utilisateur
-    // Inclut Messages++ et LastMessageTimestamp — une seule écriture disque
-    public XpResult AddXp(UserProfile user, int amount)
+    // source : "chat" | "watchtime" | "reward"
+    public XpResult AddXp(UserProfile user, int amount, string source)
     {
         if (user == null) return null;
 
-        var oldLevel              = user.Level;
-        user.Xp                  += amount;
-        user.Level                = CalculateLevel(user.Xp);
-        user.Messages++;
-        user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var oldLevel = user.Level;
+        user.Xp     += amount;
+        user.Level   = CalculateLevel(user.Xp);
+
+        if (source == "chat")
+        {
+            user.Messages++;
+            user.LastMessageTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            user.XpFromChat          += amount;
+        }
+        else if (source == "watchtime") { user.XpFromWatch   += amount; }
+        else if (source == "reward")    { user.XpFromRewards  += amount; }
+
         _repo.SaveUser(user);
 
         return new XpResult
@@ -91,6 +99,7 @@ public class XpService
         user.Level               = CalculateLevel(user.Xp);
         user.WatchTime          += intervalMinutes;
         user.LastWatchTimestamp  = nowSeconds;
+        user.XpFromWatch        += amount;
         _repo.SaveUser(user);
 
         return new XpResult

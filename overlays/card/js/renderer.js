@@ -83,6 +83,20 @@ function populate(data) {
   // XP texte : "2450 / 3100 XP"
   setText('xp-current', formatXp(current));
   setText('xp-next',    formatXp(forNext) + ' XP');
+
+  // Badge bonus XP
+  var badge     = document.getElementById('bonus-badge');
+  var bonusText = document.getElementById('bonus-text');
+  if (badge) {
+    if (data.bonusActive) {
+      var mult = data.bonusMultiplier ? 'x' + data.bonusMultiplier : 'x2';
+      var mins = data.bonusMinutesLeft ? ' · ' + data.bonusMinutesLeft + ' min' : '';
+      if (bonusText) bonusText.textContent = mult + mins;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
 }
 
 // Flash de la card si déjà visible — double rAF, pas de reflow synchrone

@@ -76,6 +76,25 @@ public class DebugConfig
     public bool Verbose { get; set; }
 }
 
+public class RewardsConfig
+{
+    public bool? BonusXpEnabled         { get; set; }
+    public float BonusXpMultiplier      { get; set; }
+    public int   BonusXpDurationMinutes { get; set; }
+    public bool? GrantXpEnabled         { get; set; }
+    public int   GrantXpAmount          { get; set; }
+}
+
+public class CheckInConfig
+{
+    public bool   Enabled             { get; set; }
+    public string ChannelPointName    { get; set; }
+    public int    XpPerCheckin        { get; set; }
+    public int    XpCardComplete      { get; set; }
+    public int    CardSize            { get; set; }
+    public int    AnimationDurationMs { get; set; }
+}
+
 // ----- Racine de config.json -----
 
 public class Config
@@ -89,6 +108,8 @@ public class Config
     public RankConfig        Rank        { get; set; }
     public BotsConfig        Bots        { get; set; }
     public DebugConfig       Debug       { get; set; }
+    public RewardsConfig     Rewards     { get; set; }
+    public CheckInConfig     CheckIn     { get; set; }
 }
 
 // ----- Chargeur de configuration -----
@@ -151,5 +172,19 @@ public class ConfigService
         if (c.Bots.BroadcasterName == null)      c.Bots.BroadcasterName    = "";
 
         if (c.Debug == null) c.Debug = new DebugConfig();
+
+        if (c.Rewards == null) c.Rewards = new RewardsConfig();
+        if (!c.Rewards.BonusXpEnabled.HasValue)      c.Rewards.BonusXpEnabled         = true;
+        if (c.Rewards.BonusXpMultiplier      <= 0)   c.Rewards.BonusXpMultiplier      = 2.0f;
+        if (c.Rewards.BonusXpDurationMinutes <= 0)   c.Rewards.BonusXpDurationMinutes = 30;
+        if (!c.Rewards.GrantXpEnabled.HasValue)      c.Rewards.GrantXpEnabled          = true;
+        if (c.Rewards.GrantXpAmount          <= 0)   c.Rewards.GrantXpAmount           = 100;
+
+        if (c.CheckIn == null) c.CheckIn = new CheckInConfig();
+        if (string.IsNullOrEmpty(c.CheckIn.ChannelPointName)) c.CheckIn.ChannelPointName    = "Check-in";
+        if (c.CheckIn.XpPerCheckin        <= 0)               c.CheckIn.XpPerCheckin        = 10;
+        if (c.CheckIn.XpCardComplete      <= 0)               c.CheckIn.XpCardComplete      = 100;
+        if (c.CheckIn.CardSize            <= 0)               c.CheckIn.CardSize            = 10;
+        if (c.CheckIn.AnimationDurationMs <= 0)               c.CheckIn.AnimationDurationMs = 5000;
     }
 }

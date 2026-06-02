@@ -272,14 +272,31 @@ public class CPHInline
             }
         }
 
-        // 7. Vérifier le cache leaderboard
+        // 7. Vérifier config rewards
+        if (config != null && config.Rewards != null)
+        {
+            CPH.LogInfo("[SYSTEM] OK   — rewards.bonusXpMultiplier  : " + config.Rewards.BonusXpMultiplier);
+            CPH.LogInfo("[SYSTEM] OK   — rewards.bonusXpDuration    : " + config.Rewards.BonusXpDurationMinutes + " min");
+            CPH.LogInfo("[SYSTEM] OK   — rewards.grantXpAmount      : " + config.Rewards.GrantXpAmount + " XP");
+
+            if (config.Rewards.BonusXpMultiplier < 1.0f)
+            {
+                CPH.LogWarn("[SYSTEM] WARN — rewards.bonusXpMultiplier < 1.0 (valeur anormale)");
+            }
+            if (config.Rewards.BonusXpDurationMinutes <= 0)
+            {
+                CPH.LogWarn("[SYSTEM] WARN — rewards.bonusXpDurationMinutes invalide");
+            }
+        }
+
+        // 8. Vérifier le cache leaderboard
         var cacheJson = CPH.GetGlobalVar<string>("xp_leaderboard_cache", false);
         if (!string.IsNullOrEmpty(cacheJson))
             CPH.LogInfo("[SYSTEM] INFO — Cache leaderboard present en GlobalVar SB");
         else
             CPH.LogInfo("[SYSTEM] INFO — Cache leaderboard absent (normal si LEADERBOARD_Update n'a pas encore tourne)");
 
-        // 8. Résumé
+        // 9. Résumé
         CPH.LogInfo("=== SYSTEM_Validate : " + (ok ? "SUCCES — installation valide" : "ECHEC — voir les FAIL ci-dessus") + " ===");
 
         return ok;

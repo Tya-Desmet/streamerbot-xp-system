@@ -23,8 +23,11 @@ public class CardPayload
     public int    xpForNext { get; set; }
     public int    rank      { get; set; }
     public string title     { get; set; }
-    public int    messages  { get; set; }
-    public int    watchTime { get; set; }
+    public int    messages         { get; set; }
+    public int    watchTime        { get; set; }
+    public bool   bonusActive      { get; set; }
+    public float  bonusMultiplier  { get; set; }
+    public int    bonusMinutesLeft { get; set; }
 }
 
 public class CPHInline
@@ -110,19 +113,28 @@ public class CPHInline
         var progress = new XpService(repo).GetProgress(user);
         var title    = new TitleService().GetTitle(user.Level, projectPath, config.Theme);
 
-        // 7. Payload V2
+        // 7. Payload V2 enrichie
+        var rewardService  = new RewardService();
+        var now            = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var bonusActive    = rewardService.IsBonusActive(user, now);
+        var multiplier     = bonusActive ? user.ActiveBonusMultiplier : 1.0f;
+        var minutesLeft    = rewardService.GetMinutesRemaining(user, now);
+
         var name    = string.IsNullOrEmpty(user.DisplayName) ? displayName : user.DisplayName;
         var payload = new CardPayload
         {
-            username  = name,
-            avatar    = "",
-            level     = user.Level,
-            xpCurrent = progress.XpIntoLevel,
-            xpForNext = progress.XpForNext,
-            rank      = liveRank,
-            title     = title,
-            messages  = user.Messages,
-            watchTime = user.WatchTime
+            username         = name,
+            avatar           = "",
+            level            = user.Level,
+            xpCurrent        = progress.XpIntoLevel,
+            xpForNext        = progress.XpForNext,
+            rank             = liveRank,
+            title            = title,
+            messages         = user.Messages,
+            watchTime        = user.WatchTime,
+            bonusActive      = bonusActive,
+            bonusMultiplier  = multiplier,
+            bonusMinutesLeft = minutesLeft
         };
 
         // 8. Diffuser via WebSocket

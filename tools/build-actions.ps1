@@ -1,9 +1,10 @@
 # tools/build-actions.ps1
 # Usage : .\tools\build-actions.ps1
+# Usage : .\tools\build-actions.ps1 -Action XP_Add
 # Genere les fichiers dans actions/generated/
 
 param(
-    [string]$Action = "all"  # "all" ou le nom d'une action specifique
+    [string]$Action = "all"
 )
 
 $Root    = Split-Path -Parent $PSScriptRoot
@@ -14,18 +15,19 @@ $Output  = "$Root\actions\generated"
 
 if (!(Test-Path $Output)) { New-Item -ItemType Directory -Path $Output | Out-Null }
 
-# Definition des dependances de chaque action
 $ActionDeps = @{
     "XP_Add" = @(
         "UserRepository",
         "ValidationService",
         "XpService",
+        "RewardService",
         "ConfigService"
     )
     "XP_WatchTime_V2" = @(
         "UserRepository",
         "WatchTimeService",
         "XpService",
+        "RewardService",
         "BotExclusionService",
         "ConfigService"
     )
@@ -45,7 +47,8 @@ $ActionDeps = @{
         "XpService",
         "TitleService",
         "BotExclusionService",
-        "ConfigService"
+        "ConfigService",
+        "RewardService"
     )
     "RANK_ShowCommand" = @(
         "UserRepository",
@@ -58,6 +61,22 @@ $ActionDeps = @{
     "SYSTEM_Validate" = @(
         "ConfigService"
     )
+    "REWARD_BonusXp" = @(
+        "UserRepository",
+        "RewardService",
+        "ConfigService"
+    )
+    "DAILY_CheckIn" = @(
+        "UserRepository",
+        "XpService",
+        "BotExclusionService",
+        "ConfigService"
+    )
+    "REWARD_GrantXp" = @(
+        "UserRepository",
+        "XpService",
+        "ConfigService"
+    )
 }
 
 function Build-Action {
@@ -65,47 +84,76 @@ function Build-Action {
 
     Write-Host "Assemblage de $Name..."
 
-    $content = ""
+    # Construire la liste ordonnee des fichiers a assembler
+    $files = @()
 
-    # 1. Header (documentation + using)
     $headerPath = "$Headers\$Name.cs"
     if (Test-Path $headerPath) {
-        $content += Get-Content $headerPath -Raw -Encoding UTF8
-        $content += "`n`n"
+        $files += [PSCustomObject]@{ Path = $headerPath; Label = "" }
     } else {
         Write-Warning "Header manquant : $headerPath"
     }
 
-    # 2. Services (depuis scripts/)
-    $deps = $ActionDeps[$Name]
-    foreach ($dep in $deps) {
-        $servicePath = "$Scripts\$dep.cs"
-        if (Test-Path $servicePath) {
-            $content += "// ----- $dep (source : scripts/$dep.cs) -----`n`n"
-            $content += Get-Content $servicePath -Raw -Encoding UTF8
-            $content += "`n`n"
+    foreach ($dep in $ActionDeps[$Name]) {
+        $sp = "$Scripts\$dep.cs"
+        if (Test-Path $sp) {
+            $files += [PSCustomObject]@{ Path = $sp; Label = "$dep (source : scripts/$dep.cs)" }
         } else {
-            Write-Warning "Service manquant : $servicePath"
+            Write-Warning "Service manquant : $sp"
         }
     }
 
-    # 3. Corps de l'action (CPHInline)
     $bodyPath = "$Bodies\$Name.cs"
     if (Test-Path $bodyPath) {
-        $content += "// ----- Action Streamer.bot -----`n`n"
-        $content += Get-Content $bodyPath -Raw -Encoding UTF8
+        $files += [PSCustomObject]@{ Path = $bodyPath; Label = "Action Streamer.bot" }
     } else {
         Write-Warning "Body manquant : $bodyPath"
     }
 
-    # Ecriture dans generated/
-    $outputPath = "$Output\$Name.cs"
-    $content | Set-Content $outputPath -Encoding UTF8
+    # Passe 1 : collecter tous les "using" uniques dans l'ordre d'apparition
+    $seenUsings = @{}
+    $allUsings  = @()
+    foreach ($f in $files) {
+        $lines = Get-Content $f.Path -Encoding UTF8
+        foreach ($line in $lines) {
+            if ($line -match '^\s*using\s+\S') {
+                $u = $line.Trim()
+                if (-not $seenUsings.ContainsKey($u)) {
+                    $seenUsings[$u] = $true
+                    $allUsings += $u
+                }
+            }
+        }
+    }
 
+    # Passe 2 : assembler le corps sans les lignes "using"
+    $bodyParts = @()
+    foreach ($f in $files) {
+        $lines     = Get-Content $f.Path -Encoding UTF8
+        $bodyLines = @()
+        foreach ($line in $lines) {
+            if ($line -notmatch '^\s*using\s+\S') {
+                $bodyLines += $line
+            }
+        }
+        $block = ($bodyLines -join "`n").Trim()
+        if ($block -ne "") {
+            if ($f.Label -ne "") {
+                $bodyParts += "// ----- $($f.Label) -----`n`n$block"
+            } else {
+                $bodyParts += $block
+            }
+        }
+    }
+
+    # Assemblage final : usings en tete, puis le code
+    $final = ($allUsings -join "`n") + "`n`n" + ($bodyParts -join "`n`n")
+
+    $outputPath = "$Output\$Name.cs"
+    [System.IO.File]::WriteAllText($outputPath, $final, [System.Text.Encoding]::UTF8)
     Write-Host "OK : $outputPath"
 }
 
-# Assemblage
 if ($Action -eq "all") {
     foreach ($name in $ActionDeps.Keys) {
         Build-Action $name

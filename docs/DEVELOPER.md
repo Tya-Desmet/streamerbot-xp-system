@@ -36,6 +36,9 @@ Les actions sont des **orchestrateurs**. Elles reçoivent les événements Strea
 | `LEADERBOARD_Update` | Timer (5 min) | Construit le Top N, l'envoie à OBS, met à jour le cache rang |
 | `CARD_ShowProfile` | Channel Point Redemption | Affiche la carte de profil d'un viewer |
 | `RANK_ShowCommand` | Chat Command `!rank` | Répond avec le rang, le niveau et les stats du viewer |
+| `REWARD_BonusXp` | Channel Point Redemption | Active le multiplicateur XP temporaire pour un viewer |
+| `REWARD_GrantXp` | Channel Point Redemption | Octroie un montant fixe d'XP via channel point |
+| `DAILY_CheckIn` | Channel Point Redemption | Check-in quotidien — coche une case sur la carte de fidélité (10 cases) |
 
 ---
 
@@ -53,6 +56,7 @@ Les services contiennent la logique métier. Ils sont assemblés dans chaque act
 | `RankService` | Rang live, format message `!rank`, format watchtime |
 | `TitleService` | Résolution titre par niveau (cascade 4 sources) |
 | `BotExclusionService` | Charge `excluded-users.json`, vérifie les exclusions bots |
+| `RewardService` | Cycle de vie du multiplicateur — activation, lecture, expiration paresseuse |
 
 > Les fichiers dans `scripts/` sont les sources canoniques. Modifier un service, puis lancer `.\tools\build-actions.ps1` pour régénérer `actions/generated/`.
 

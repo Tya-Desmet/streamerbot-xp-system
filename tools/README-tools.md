@@ -34,4 +34,17 @@ scripts/
   BotExclusionService.cs
   RankService.cs
   TitleService.cs
+  RewardService.cs
 ```
+
+## migrate-add-reward-fields.ps1
+
+Ajoute les champs V2.6 manquants (XpFromChat, XpFromWatch, XpFromRewards,
+ActiveBonusMultiplier, BonusExpiryTimestamp, CheckInCount, LastCheckInDay,
+TotalCheckIns) aux profils JSON existants.
+
+Usage :
+  .\tools\migrate-add-reward-fields.ps1 -DataPath "C:\...\data\users" -DryRun
+  .\tools\migrate-add-reward-fields.ps1 -DataPath "C:\...\data\users"
+
+A lancer UNE SEULE FOIS apres deploiement de V2.6.

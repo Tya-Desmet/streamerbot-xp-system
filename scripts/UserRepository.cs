@@ -36,6 +36,14 @@ public class UserProfile
     public long   LastMessageTimestamp { get; set; }
     public long   LastWatchTimestamp   { get; set; }   // Unix — dernier cycle watchtime reçu
     public int    WatchStreak          { get; set; }   // cycles consécutifs — bonus fidélité
+    public int    XpFromChat             { get; set; }
+    public int    XpFromWatch            { get; set; }
+    public int    XpFromRewards          { get; set; }
+    public float  ActiveBonusMultiplier  { get; set; } = 1.0f;
+    public long   BonusExpiryTimestamp   { get; set; }
+    public int    CheckInCount           { get; set; }
+    public int    LastCheckInDay         { get; set; }
+    public int    TotalCheckIns          { get; set; }
 }
 
 // Repository — lecture et écriture JSON uniquement
@@ -67,7 +75,6 @@ public class UserRepository
             Level                = 1,
             Messages             = 0,
             WatchTime            = 0,
-            Rank                 = 0,
             LastMessageTimestamp = 0,
             LastWatchTimestamp   = 0,
             WatchStreak          = 0

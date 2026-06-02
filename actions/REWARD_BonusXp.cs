@@ -1,34 +1,35 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : USER_GetOrCreate
+// ACTION : REWARD_BonusXp
 // ============================================================
-// DÉCLENCHEMENT :
-//   Appelée en première sub-action de toute action Twitch
-//   qui a besoin d'un profil utilisateur (XP_Add, etc.)
+// RÔLE : Activer le multiplicateur XP temporaire pour un viewer
+//         suite au rachat d'un Channel Point.
 //
-// PRÉREQUIS — une seule variable globale dans Streamer.bot :
-//   xp_configPath  string  ex: C:\...\streamerbot-xp-system\configs\config.json
-//   Persistante : oui
+// INSTALLATION DANS STREAMER.BOT :
+//   1. Actions → Add Action → nommer "REWARD_BonusXp"
+//   2. Déclencheur : Twitch → Channel Point Redemption
+//      Nom du reward : "Double XP" (configurable)
+//   3. Sub-Action 1 : Run Action → USER_GetOrCreate
+//   4. Sub-Action 2 : Execute C# Code → coller ce fichier
+//   5. Compiler et sauvegarder
+//
+// PRÉREQUIS :
+//   xp_configPath  string  Persistante : oui
 //
 // ARGUMENTS ENTRANTS :
-//   args["userName"]        — login Twitch (toujours minuscule)
-//   args["userDisplayName"] — pseudo affiché (avec majuscules)
+//   args["user_username"]   — login Twitch (posé par USER_GetOrCreate)
+//   args["user_excluded"]   — bool (posé par USER_GetOrCreate)
 //
 // ARGUMENTS SORTANTS :
-//   %user_excluded%      bool   — true si le compte est dans la liste d'exclusion
-//   %user_username%      string — login Twitch
-//   %user_displayName%   string — pseudo affiché
-//   %user_xp%            int    — XP total accumulé
-//   %user_level%         int    — niveau actuel
-//   %user_messages%      int    — messages validés
-//   %user_watchtime%     int    — watchtime en minutes
-//   %user_isNew%         bool   — true si profil créé ce cycle
-//
-// AUCUNE logique XP — AUCUNE logique leaderboard — AUCUN overlay
+//   %reward_bonus_applied%         bool   — true si bonus activé avec succès
+//   %reward_multiplier%            float  — multiplicateur appliqué (ex: 2.0)
+//   %reward_expires_in_minutes%    int    — durée restante en minutes
+//   %reward_was_already_active%    bool   — true si bonus remplacé
+//   %reward_message%               string — message de confirmation envoyé
 // ============================================================
 
 // ----- UserRepository (source : scripts/UserRepository.cs) -----
@@ -40,17 +41,6 @@ using Newtonsoft.Json;
 //   Ce fichier est une référence source.
 //   Coller UserProfile + UserRepository au-dessus de CPHInline
 //   dans chaque action C# qui en a besoin.
-//
-// Exemple d'action Streamer.bot :
-//   [UserProfile class]
-//   [UserRepository class]
-//   public class CPHInline {
-//       public bool Execute() {
-//           var repo = new UserRepository(CPH.GetGlobalVar<string>("dataPath", true));
-//           ...
-//           return true;
-//       }
-//   }
 // ============================================================
 
 
@@ -89,13 +79,11 @@ public class UserRepository
         Directory.CreateDirectory(_dataPath);
     }
 
-    // Vérifie si le fichier {username}.json existe
     public bool UserExists(string username)
     {
         return File.Exists(GetFilePath(username));
     }
 
-    // Crée un profil vierge pour un nouveau viewer
     public UserProfile CreateUser(string username, string displayName = null)
     {
         var user = new UserProfile
@@ -115,7 +103,6 @@ public class UserRepository
         return user;
     }
 
-    // Charge le profil depuis le JSON — retourne null si introuvable
     public UserProfile LoadUser(string username)
     {
         var path = GetFilePath(username);
@@ -127,7 +114,6 @@ public class UserRepository
         return JsonConvert.DeserializeObject<UserProfile>(json);
     }
 
-    // Persiste le profil sur le disque
     public void SaveUser(UserProfile user)
     {
         var json    = JsonConvert.SerializeObject(user, Formatting.Indented);
@@ -150,7 +136,6 @@ public class UserRepository
         }
     }
 
-    // Charge tous les profils du dossier — pour leaderboard, export, stats globales
     public List<UserProfile> GetAllUsers()
     {
         var users = new List<UserProfile>();
@@ -188,72 +173,83 @@ public class UserRepository
     }
 }
 
-// ----- BotExclusionService (source : scripts/BotExclusionService.cs) -----
+// ----- RewardService (source : scripts/RewardService.cs) -----
 
 // ============================================================
-// BotExclusionService.cs — Streamer.bot XP System
+// RewardService.cs — Streamer.bot XP System
 // ============================================================
 // RESPONSABILITÉ :
-//   Charger et vérifier la liste des comptes exclus du système XP.
-//   Aucun exclu ne gagne d'XP, n'apparaît dans le leaderboard,
-//   ne peut afficher de profile card ni répondre à !rank.
+//   Gérer le cycle de vie du multiplicateur XP temporaire.
+//   Ne lit et n'écrit jamais le disque directement.
+//   Délègue la persistance à l'action appelante.
 //
-// SOURCES D'EXCLUSION (priorité) :
-//   1. configs/excluded-users.json     ← liste personnalisée utilisateur
-//   2. Si config.excludeBroadcaster = true et config.broadcasterName renseigné
-//      → le streamer est automatiquement exclu
-//   3. Fallback codé en dur si le fichier JSON est absent ou vide
-//
-// COMPARAISON : insensible à la casse (OrdinalIgnoreCase)
-//   "NightBot", "nightbot", "NIGHTBOT" → même compte
+// UTILISATION :
+//   var rewards = new RewardService();
+//   var multiplier = rewards.GetCurrentMultiplier(user, now);
+//   var result = rewards.ApplyBonus(user, 2.0f, 30, now);
+//   repo.SaveUser(user); // ← sauvegarder APRÈS ApplyBonus
 //
 // AUCUNE logique XP — AUCUNE écriture disque — AUCUN overlay
 // ============================================================
 
-
-public class BotExclusionService
+public class BonusResult
 {
-    private readonly Dictionary<string, bool> _excluded;
+    public float MultiplierApplied { get; set; }
+    public long  ExpiresAt         { get; set; }
+    public bool  WasAlreadyActive  { get; set; }
+    public int   ExpiresInMinutes  { get; set; }
+}
 
-    public BotExclusionService(string projectPath, string broadcasterName, bool excludeBroadcaster)
+public class RewardService
+{
+    // Retourne le multiplicateur actif.
+    // Si le bonus est expiré, remet le profil à 1.0 (lazy cleanup) — NE SAUVEGARDE PAS.
+    // L'action appelante doit sauvegarder si le profil a été modifié.
+    public float GetCurrentMultiplier(UserProfile user, long nowSeconds)
     {
-        _excluded = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        Load(projectPath);
-        if (excludeBroadcaster && !string.IsNullOrEmpty(broadcasterName))
-            _excluded[broadcasterName.Trim()] = true;
-    }
-
-    public bool IsExcluded(string username)
-    {
-        if (string.IsNullOrEmpty(username)) return true;
-        return _excluded.ContainsKey(username.Trim());
-    }
-
-    private void Load(string projectPath)
-    {
-        var path = Path.Combine(projectPath, "configs", "excluded-users.json");
-        if (File.Exists(path))
+        if (user == null) return 1.0f;
+        if (user.BonusExpiryTimestamp <= 0) return 1.0f;
+        if (nowSeconds >= user.BonusExpiryTimestamp)
         {
-            try
-            {
-                var list = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(path));
-                if (list != null)
-                    foreach (var name in list)
-                        if (!string.IsNullOrWhiteSpace(name))
-                            _excluded[name.Trim()] = true;
-                // Ce fichier REMPLACE le fallback — voir configs/EXCLUDED-USERS-README.md
-                if (_excluded.Count > 0) return;
-            }
-            catch { }
+            user.ActiveBonusMultiplier = 1.0f;
+            user.BonusExpiryTimestamp  = 0;
+            return 1.0f;
         }
-        _excluded["nightbot"]      = true;
-        _excluded["streamelements"] = true;
-        _excluded["streamlabs"]    = true;
-        _excluded["moobot"]        = true;
-        _excluded["fossabot"]      = true;
-        _excluded["wizebot"]       = true;
-        _excluded["mixitupbot"]    = true;
-        _excluded["streamerbot"]   = true;
+        return user.ActiveBonusMultiplier > 1.0f ? user.ActiveBonusMultiplier : 1.0f;
+    }
+
+    public bool IsBonusActive(UserProfile user, long nowSeconds)
+    {
+        if (user == null) return false;
+        return user.ActiveBonusMultiplier > 1.0f
+            && user.BonusExpiryTimestamp > 0
+            && nowSeconds < user.BonusExpiryTimestamp;
+    }
+
+    // Active un multiplicateur sur le profil. Ne sauvegarde pas.
+    // L'action appelante doit appeler SaveUser() après.
+    public BonusResult ApplyBonus(UserProfile user, float multiplier, int durationMinutes, long nowSeconds)
+    {
+        var wasActive = IsBonusActive(user, nowSeconds);
+        user.ActiveBonusMultiplier = multiplier;
+        user.BonusExpiryTimestamp  = nowSeconds + (long)(durationMinutes * 60);
+
+        var minutesRemaining = (int)((user.BonusExpiryTimestamp - nowSeconds) / 60);
+
+        return new BonusResult
+        {
+            MultiplierApplied = multiplier,
+            ExpiresAt         = user.BonusExpiryTimestamp,
+            WasAlreadyActive  = wasActive,
+            ExpiresInMinutes  = minutesRemaining
+        };
+    }
+
+    public int GetMinutesRemaining(UserProfile user, long nowSeconds)
+    {
+        if (!IsBonusActive(user, nowSeconds)) return 0;
+        var seconds = user.BonusExpiryTimestamp - nowSeconds;
+        return seconds > 0 ? (int)(seconds / 60) : 0;
     }
 }
 
@@ -269,20 +265,6 @@ public class BotExclusionService
 //     Nom     : xp_configPath
 //     Valeur  : C:\Users\TonNom\streamerbot-xp-system\configs\config.json
 //     Persist : oui
-//
-//   Puis dans Execute() :
-//     var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
-//     var config     = new ConfigService().LoadConfig(configPath);
-//     // config.DataPath, config.Xp.PerMessage, config.Bots.BroadcasterName...
-//
-// STRUCTURE JSON :
-//   config.json utilise des sections imbriquées (nested).
-//   Newtonsoft.Json mappe automatiquement PascalCase C# ↔ camelCase JSON.
-//   Toute section absente du JSON est reconstruite avec les valeurs par défaut.
-//
-// FALLBACK :
-//   Si le fichier est absent ou malformé, LoadConfig retourne les valeurs
-//   par défaut sans lever d'exception. Les actions continuent normalement.
 //
 // AUCUNE logique métier — lecture et mapping uniquement
 // ============================================================
@@ -453,71 +435,67 @@ public class CPHInline
 {
     public bool Execute()
     {
-        // 1. Identité du viewer
-        if (!args.ContainsKey("userName") || args["userName"] == null)
+        // 1. Vérifier exclusion
+        var excluded = args.ContainsKey("user_excluded")
+                       && args["user_excluded"] != null
+                       && (bool)args["user_excluded"] == true;
+        if (excluded) return true;
+
+        // 2. Username
+        if (!args.ContainsKey("user_username") || args["user_username"] == null)
         {
-            CPH.LogWarn("[USER_GetOrCreate] userName absent des args");
+            CPH.LogWarn("[REWARD_BonusXp] user_username absent — USER_GetOrCreate requis");
             return false;
         }
+        var username = args["user_username"].ToString();
 
-        var username    = args["userName"].ToString().Trim();
-        var displayName = args.ContainsKey("userDisplayName") && args["userDisplayName"] != null
-                              ? args["userDisplayName"].ToString().Trim()
-                              : username;
+        // 3. Configuration
+        var configPath = CPH.GetGlobalVar<string>("xp_configPath", true);
+        var config     = new ConfigService(CPH).LoadConfig(configPath);
 
-        if (string.IsNullOrEmpty(username))
+        if (config.Rewards.BonusXpEnabled != true)
         {
-            CPH.LogWarn("[USER_GetOrCreate] userName vide");
-            return false;
-        }
-
-        // 2. Configuration
-        var configPath  = CPH.GetGlobalVar<string>("xp_configPath", true);
-        var config      = new ConfigService(CPH).LoadConfig(configPath);
-        var configDir   = Path.GetDirectoryName(configPath ?? "");
-        var projectPath = Path.GetDirectoryName(configDir ?? "");
-
-        if (string.IsNullOrEmpty(config.DataPath))
-        {
-            CPH.LogWarn("[USER_GetOrCreate] dataPath non configuré dans configs/config.json");
-            return false;
-        }
-
-        // 3. Vérification exclusion — AVANT toute création de profil
-        var bots = new BotExclusionService(
-            projectPath,
-            config.Bots.BroadcasterName,
-            config.Bots.ExcludeBroadcaster == true);
-
-        if (bots.IsExcluded(username))
-        {
-            CPH.SetArgument("user_excluded", true);
+            CPH.LogInfo("[REWARD_BonusXp] Feature desactivee dans config.json");
+            CPH.SetArgument("reward_bonus_applied", false);
             return true;
         }
 
-        CPH.SetArgument("user_excluded", false);
-
-        // 4. Charger ou créer le profil
-        var repo  = new UserRepository(config.DataPath);
-        var isNew = false;
-        var user  = repo.LoadUser(username);
+        // 4. Charger profil
+        var repo = new UserRepository(config.DataPath);
+        var user = repo.LoadUser(username);
 
         if (user == null)
         {
-            user  = repo.CreateUser(username, displayName);
-            isNew = true;
-            CPH.LogInfo("[USER_GetOrCreate] Nouveau joueur créé : " + displayName + " (" + username + ")");
+            CPH.LogWarn("[REWARD_BonusXp] Profil introuvable pour '" + username + "'");
+            return false;
         }
 
-        // 5. Exposer le profil aux sub-actions suivantes
-        CPH.SetArgument("user_username",      user.Username);
-        CPH.SetArgument("user_displayName",   user.DisplayName ?? displayName);
-        CPH.SetArgument("user_xp",            user.Xp);
-        CPH.SetArgument("user_level",         user.Level);
-        CPH.SetArgument("user_messages",      user.Messages);
-        CPH.SetArgument("user_watchtime",     user.WatchTime);
-        CPH.SetArgument("user_lastTimestamp", user.LastMessageTimestamp);
-        CPH.SetArgument("user_isNew",         isNew);
+        // 5. Appliquer le bonus
+        var rewards = new RewardService();
+        var now     = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var result  = rewards.ApplyBonus(
+            user,
+            config.Rewards.BonusXpMultiplier,
+            config.Rewards.BonusXpDurationMinutes,
+            now);
+
+        repo.SaveUser(user);
+
+        // 6. Message chat
+        var displayName = string.IsNullOrEmpty(user.DisplayName) ? username : user.DisplayName;
+        var message     = result.WasAlreadyActive
+            ? "@" + displayName + " — Double XP prolonge ! x" + result.MultiplierApplied + " pendant encore " + result.ExpiresInMinutes + " min"
+            : "@" + displayName + " — Double XP active ! x" + result.MultiplierApplied + " pendant " + result.ExpiresInMinutes + " min";
+
+        CPH.SendMessage(message);
+        CPH.LogInfo("[REWARD_BonusXp] " + username + " — x" + result.MultiplierApplied + " pendant " + result.ExpiresInMinutes + " min");
+
+        // 7. Exposer
+        CPH.SetArgument("reward_bonus_applied",      true);
+        CPH.SetArgument("reward_multiplier",         result.MultiplierApplied);
+        CPH.SetArgument("reward_expires_in_minutes", result.ExpiresInMinutes);
+        CPH.SetArgument("reward_was_already_active", result.WasAlreadyActive);
+        CPH.SetArgument("reward_message",            message);
 
         return true;
     }
