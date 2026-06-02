@@ -61,14 +61,13 @@
   height: 100%;
   pointer-events: none;
   z-index: 40;
+  opacity: 0;
+  transition: none;
 }
 
 .mys-flower {
-  position: fixed;
-  width: 64px;
-  height: 64px;
   pointer-events: none;
-  z-index: 42;
+  z-index: 5;
   filter:
     drop-shadow(0 0 8px rgba(232, 96, 144, 0.75))
     drop-shadow(0 0 22px rgba(180, 40, 90, 0.40))
@@ -79,4 +78,39 @@
 @keyframes mys-sway {
   0%, 100% { transform: rotate(-6deg); }
   50%      { transform: rotate(6deg); }
+}
+
+/* ============================================================
+   PÉTALE QUI SE POSE — déclenché à l'apparition du check-in
+   ============================================================ */
+.mys-settle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 50;
+  transform-origin: center center;
+  animation: mys-settle-fall 2.2s cubic-bezier(0.25, 0, 0.75, 1) forwards;
+}
+@keyframes mys-settle-fall {
+  0%   { opacity: 0; transform: translateY(-55px) rotate(-42deg) scale(0.3); }
+  12%  { opacity: 1; }
+  58%  { opacity: 1; transform: translateY(38px)  rotate(20deg)  scale(1.18); }
+  76%  { opacity: 1; transform: translateY(50px)  rotate(-7deg)  scale(1.04); }
+  90%  { opacity: 0.85; transform: translateY(46px) rotate(2deg) scale(1); }
+  100% { opacity: 0;    transform: translateY(50px) rotate(0deg) scale(0.94); }
+}
+
+/* ============================================================
+   BLOOM PAR CASE — déclenché à chaque ci-box-fill
+   ============================================================ */
+.mys-box-bloom {
+  position: fixed;
+  pointer-events: none;
+  z-index: 50;
+  transform-origin: center center;
+  animation: mys-box-bloom-anim 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes mys-box-bloom-anim {
+  0%   { opacity: 1; transform: scale(0)    rotate(-22deg); }
+  60%  { opacity: 1; transform: scale(1.38) rotate(12deg); }
+  100% { opacity: 0; transform: scale(1.05) rotate(0deg); }
 }

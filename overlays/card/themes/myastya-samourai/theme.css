@@ -89,11 +89,11 @@
 }
 
 /* ============================================================
-   Décor injecté par effects.js (pétales/étincelles/fleur)
+   Décor injecté par effects.js
    Stylé ici pour rester cohérent avec le reste du thème.
    ============================================================ */
 
-/* Canvas pétales + étincelles — plein cadre, au-dessus, non cliquable */
+/* Canvas étincelles — plein cadre, caché par défaut, visible pendant les bursts */
 .mys-fx-canvas {
   position: fixed;
   inset: 0;
@@ -101,15 +101,14 @@
   height: 100%;
   pointer-events: none;
   z-index: 40;
+  opacity: 0;
+  transition: none;
 }
 
-/* Fleur de cerisier décorative (SVG injecté) */
+/* Fleur de cerisier décorative (SVG injecté, ancrée sur .card) */
 .mys-flower {
-  position: fixed;
-  width: 64px;
-  height: 64px;
   pointer-events: none;
-  z-index: 42;
+  z-index: 5;
   filter:
     drop-shadow(0 0 8px rgba(232, 96, 144, 0.75))
     drop-shadow(0 0 22px rgba(180, 40, 90, 0.40))
@@ -120,4 +119,31 @@
 @keyframes mys-sway {
   0%, 100% { transform: rotate(-6deg); }
   50%      { transform: rotate(6deg); }
+}
+
+/* ============================================================
+   SLASH SAMOURAI — déclenché au cardIn
+   ============================================================ */
+.mys-slash {
+  position: fixed;
+  pointer-events: none;
+  z-index: 50;
+  overflow: visible;
+}
+.mys-slash line {
+  stroke: rgba(255, 245, 250, 0.95);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  filter:
+    drop-shadow(0 0 6px rgba(255, 200, 220, 1))
+    drop-shadow(0 0 20px rgba(232, 96, 144, 0.80));
+  animation: mys-slash-draw 0.9s cubic-bezier(0.04, 0, 0.2, 1) forwards;
+}
+@keyframes mys-slash-draw {
+  0%  { stroke-dashoffset: 1400; opacity: 1; }
+  28% { stroke-dashoffset: 0;    opacity: 1; }
+  62% { stroke-dashoffset: 0;    opacity: 0.65; }
+  100%{ stroke-dashoffset: 0;    opacity: 0; }
 }

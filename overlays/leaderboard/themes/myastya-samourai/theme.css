@@ -99,14 +99,18 @@
   height: 100%;
   pointer-events: none;
   z-index: 40;
+  opacity: 0;
+  transition: none;
+}
+
+/* position:relative → ancre les fleurs SVG sur le panel */
+.panel {
+  position: relative;
 }
 
 .mys-flower {
-  position: fixed;
-  width: 64px;
-  height: 64px;
   pointer-events: none;
-  z-index: 42;
+  z-index: 5;
   filter:
     drop-shadow(0 0 8px rgba(232, 96, 144, 0.75))
     drop-shadow(0 0 22px rgba(180, 40, 90, 0.40))
@@ -117,4 +121,21 @@
 @keyframes mys-sway {
   0%, 100% { transform: rotate(-6deg); }
   50%      { transform: rotate(6deg); }
+}
+
+/* ============================================================
+   PÉTALE PRIZE — s'épanouit sur le n°1 au podium
+   ============================================================ */
+.mys-prize-petal {
+  position: fixed;
+  pointer-events: none;
+  z-index: 50;
+  transform-origin: center center;
+  animation: mys-prize-anim 1.5s ease-out forwards;
+}
+@keyframes mys-prize-anim {
+  0%   { opacity: 0; transform: scale(0.12) rotate(-38deg); }
+  22%  { opacity: 1; transform: scale(1.38) rotate(8deg); }
+  55%  { opacity: 0.9; transform: scale(1.14) rotate(-3deg); }
+  100% { opacity: 0; transform: scale(1.55) rotate(5deg); }
 }
