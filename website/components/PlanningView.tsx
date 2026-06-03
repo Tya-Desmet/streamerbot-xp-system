@@ -14,7 +14,8 @@ export default function PlanningView({ seed }: { seed: Schedule }) {
   useEffect(() => {
     let cancelled = false;
     fetchContent<Schedule>('schedule', seed).then((s) => {
-      if (!cancelled && s && Array.isArray(s.days)) setSchedule(s);
+      // Garde le seed build-time si l'API ne renvoie pas de jours (backend pas encore peuplé).
+      if (!cancelled && s && Array.isArray(s.days) && s.days.length > 0) setSchedule(s);
     });
     return () => {
       cancelled = true;

@@ -5,6 +5,11 @@ data/users/
 ai/
 .claude/
 
+# ── Secrets (ne jamais commiter) ──
+.env
+.env.*
+!.env.example
+
 # ── Exports et backups ──
 exports/
 backup/

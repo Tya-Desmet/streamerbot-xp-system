@@ -16,7 +16,8 @@ export default function FriendsLive({ friends: seed }: { friends: Friend[] }) {
   useEffect(() => {
     let cancelled = false;
     fetchContent<Friend[]>('friends', seed).then((list) => {
-      if (!cancelled && Array.isArray(list)) setFriends(list);
+      // Garde le seed build-time si l'API ne renvoie rien (backend pas encore peuplé).
+      if (!cancelled && Array.isArray(list) && list.length > 0) setFriends(list);
     });
     return () => {
       cancelled = true;
