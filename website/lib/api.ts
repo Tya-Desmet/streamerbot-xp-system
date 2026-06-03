@@ -8,6 +8,12 @@ export function apiBase(): string | null {
   return API && API.length > 0 ? API.replace(/\/$/, '') : null;
 }
 
+// URL du leaderboard : API temps réel si configurée, sinon le fichier statique exporté.
+export function leaderboardUrl(): string {
+  const base = apiBase();
+  return base ? `${base}/api/leaderboard` : '/data/leaderboard.json';
+}
+
 // Récupère un type de contenu depuis l'API ; renvoie `fallback` si pas d'API ou erreur.
 export async function fetchContent<T>(kind: string, fallback: T): Promise<T> {
   const base = apiBase();

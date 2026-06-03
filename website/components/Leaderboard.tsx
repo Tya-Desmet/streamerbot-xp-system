@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Leaderboard as LeaderboardData } from '@/lib/contract';
 import { formatXp } from '@/lib/format';
 import { avatarGradient, initials } from '@/lib/avatar';
+import { leaderboardUrl } from '@/lib/api';
 import Podium from './Podium';
 import PlayerRow from './PlayerRow';
 import FindMe from './FindMe';
@@ -39,7 +40,7 @@ export default function Leaderboard({ seed }: { seed: LeaderboardData }) {
     let cancelled = false;
     async function refetch() {
       try {
-        const res = await fetch('/data/leaderboard.json', { cache: 'no-store' });
+        const res = await fetch(leaderboardUrl(), { cache: 'no-store' });
         if (!res.ok) return;
         const fresh: LeaderboardData = await res.json();
         if (cancelled) return;
