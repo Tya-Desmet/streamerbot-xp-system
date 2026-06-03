@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, Poppins } from 'next/font/google';
 import './globals.css';
-import ThemeProvider from '@/components/ThemeProvider';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
-import { getSocials } from '@/lib/content';
+import { getSocials, getSite } from '@/lib/content';
 
 const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk', display: 'swap' });
 const body = Poppins({
@@ -19,21 +18,18 @@ export const metadata: Metadata = {
   description: 'Hub communautaire — leaderboard, planning et ressources',
 };
 
-// Applique le thème mémorisé avant peinture (évite le flash sur akiba/hara).
-const THEME_BOOT = "try{var t=localStorage.getItem('sl-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}";
-
+// Le thème est choisi par le STREAMER (content/site.json), appliqué au build.
+// Les visiteurs ne le changent pas → pas de switcher, pas de localStorage.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const socials = getSocials();
+  const site = getSite();
 
   return (
-    <html lang="fr" suppressHydrationWarning className={`${display.variable} ${body.variable}`}>
+    <html lang="fr" data-theme={site.theme || 'shibuya'} className={`${display.variable} ${body.variable}`}>
       <body>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
-        <ThemeProvider>
-          <NavBar twitchUrl={socials.twitch ?? '#'} />
-          {children}
-          <Footer socials={socials} />
-        </ThemeProvider>
+        <NavBar twitchUrl={socials.twitch ?? '#'} twitchChannel={site.twitchChannel} />
+        {children}
+        <Footer socials={socials} />
       </body>
     </html>
   );

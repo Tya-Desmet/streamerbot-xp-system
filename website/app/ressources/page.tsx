@@ -3,9 +3,9 @@ import { getDownloads } from '@/lib/content';
 import DownloadsBrowser from '@/components/DownloadsBrowser';
 import Reveal from '@/components/Reveal';
 
-export const metadata: Metadata = { title: 'Downloads — Stream Hub' };
+export const metadata: Metadata = { title: 'Ressources — Stream Hub' };
 
-export default function DownloadsPage() {
+export default function RessourcesPage() {
   const items = getDownloads();
 
   return (
@@ -14,7 +14,7 @@ export default function DownloadsPage() {
         <Reveal>
           <div className="section-head">
             <div>
-              <div className="eyebrow">Ressources · ダウンロード</div>
+              <div className="eyebrow">Ressources · リソース</div>
               <h2>
                 À <span className="text-grad">télécharger</span>
               </h2>

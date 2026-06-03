@@ -86,9 +86,15 @@ export default function DownloadCard({ d, featured = false }: { d: Download; fea
           {meta}
           {d.dls ? ` · ${new Intl.NumberFormat('fr-FR').format(d.dls)} DL` : ''}
         </span>
-        <a className="btn btn-primary btn-sm" href={d.url || '#'} download target="_blank" rel="noopener noreferrer">
-          Télécharger
-        </a>
+        {d.url && d.url !== '#' ? (
+          <a className="btn btn-primary btn-sm" href={d.url} download target="_blank" rel="noopener noreferrer">
+            Télécharger
+          </a>
+        ) : (
+          <span className="btn btn-ghost btn-sm" aria-disabled="true" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+            Bientôt
+          </span>
+        )}
       </div>
     </div>
   );

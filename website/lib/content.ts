@@ -31,7 +31,10 @@ export type Friend = {
   viewers: number;
   hue: number;
   url: string;
+  channel?: string; // login Twitch (pour la détection live decapi) — dérivé de url si absent
 };
+
+export type Site = { theme: string; twitchChannel: string };
 
 export type ScheduleDay = {
   day: string;
@@ -74,4 +77,7 @@ export function getSchedule(): Schedule {
 }
 export function getDownloads(): Download[] {
   return read<Download[]>('downloads.json', []);
+}
+export function getSite(): Site {
+  return read<Site>('site.json', { theme: 'shibuya', twitchChannel: '' });
 }

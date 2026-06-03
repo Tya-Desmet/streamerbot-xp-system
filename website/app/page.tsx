@@ -1,7 +1,8 @@
 import { getMeta, getLeaderboard } from '@/lib/data';
-import { getFriends, getSocials } from '@/lib/content';
+import { getFriends, getSocials, getSite } from '@/lib/content';
 import Hero from '@/components/Hero';
-import FriendCard from '@/components/FriendCard';
+import FriendsLive from '@/components/FriendsLive';
+import LivePreview from '@/components/LivePreview';
 import SocialCard, { SOCIAL_META, type Platform } from '@/components/SocialCard';
 import Podium from '@/components/Podium';
 import Reveal from '@/components/Reveal';
@@ -11,14 +12,20 @@ export default function Home() {
   const lb = getLeaderboard();
   const friends = getFriends();
   const socials = getSocials();
+  const site = getSite();
 
   const top3 = (lb.players ?? []).slice(0, 3);
-  const liveFirst = [...friends].sort((a, b) => Number(b.live) - Number(a.live));
   const platforms = (Object.keys(SOCIAL_META) as Platform[]).filter((p) => socials[p]);
 
   return (
     <main>
       <Hero streamerName={meta.streamer.name} twitchUrl={socials.twitch ?? '#'} />
+
+      {site.twitchChannel ? (
+        <div className="wrap" style={{ textAlign: 'center', marginTop: -24 }}>
+          <LivePreview channel={site.twitchChannel} twitchUrl={socials.twitch ?? '#'} />
+        </div>
+      ) : null}
 
       {friends.length > 0 && (
         <section className="section">
@@ -32,11 +39,7 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal>
-              <div className="friends">
-                {liveFirst.map((f) => (
-                  <FriendCard key={f.handle} friend={f} />
-                ))}
-              </div>
+              <FriendsLive friends={friends} />
             </Reveal>
           </div>
         </section>
@@ -75,10 +78,7 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal>
-              <div
-                className="grid"
-                style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
-              >
+              <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                 {platforms.map((p) => (
                   <SocialCard key={p} platform={p} url={socials[p] as string} />
                 ))}
