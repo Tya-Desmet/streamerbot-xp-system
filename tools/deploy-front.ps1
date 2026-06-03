@@ -8,7 +8,7 @@
 param(
   [string]$FtpHost   = "ou2fa0.ftp.infomaniak.com",
   [string]$FtpUser   = "ou2fa0_mystya",
-  [string]$RemoteDir = "/",                                  # <-- À ADAPTER (ex. /web, /sites/mystya.fr)
+  [string]$RemoteDir = "/sites/mystya.fr",                   # dossier servi par mystya.fr (FTP)
   [string]$ExportDir = "C:\Stream\streamerbot-xp-system\exports",
   [switch]$NoTls                                             # par défaut FTPS explicite ; -NoTls = FTP simple
 )
