@@ -59,7 +59,14 @@ Note-les : `ADMIN_PASSWORD`, `JWT_SECRET`, `PUSH_API_KEY`.
    remplacer `https://api.EXEMPLE.tld` par `https://api.<domaine>`
    (ou retirer si tu n'utilises pas le backend).
 2. **(Optionnel) Image de partage** : déposer `website/public/og.jpg` (1200×630, visuel sakura).
-3. **Build** :
+3. **Build + upload (recommandé)** : utilise le script qui fait tout. Renseigne d'abord
+   ta config locale (gitignorée, jamais committée) :
+   ```powershell
+   Copy-Item tools\deploy.local.ps1.example tools\deploy.local.ps1
+   # édite tools\deploy.local.ps1 : FtpHost, FtpUser, RemoteDir, SiteUrl, ApiUrl
+   .\tools\deploy-front.ps1     # npm install si besoin + build + upload FTP
+   ```
+   Build manuel équivalent (sans upload) :
    ```powershell
    cd website
    $env:NEXT_PUBLIC_SITE_URL = "https://<domaine>"
@@ -68,8 +75,8 @@ Note-les : `ADMIN_PASSWORD`, `JWT_SECRET`, `PUSH_API_KEY`.
    npm install
    npm run build      # génère website/out/
    ```
-4. **Déployer `website/out/`** sur l'hébergement Web Infomaniak (racine du domaine),
-   via SFTP/Git. Le `.htaccess` (en-têtes) part avec.
+4. **Déployer `website/out/`** sur l'hébergement Web Infomaniak (racine du domaine).
+   `deploy-front.ps1` le fait en FTP ; sinon SFTP/Git. Le `.htaccess` (en-têtes) part avec.
 5. **Vérifier** : ouvrir `https://<domaine>` ; tester un changement dans `/admin` (login →
    publier) → visible sur le site sans rebuild.
 

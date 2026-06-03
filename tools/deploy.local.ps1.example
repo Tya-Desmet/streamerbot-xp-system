@@ -1,0 +1,22 @@
+# tools/deploy.local.ps1.example
+# ----------------------------------------------------------------------------
+# MODELE de config de deploiement. Copie ce fichier en `deploy.local.ps1`
+# (meme dossier) et renseigne TES valeurs. `deploy.local.ps1` est gitignore :
+# il ne sera jamais committe -> tes domaines / identifiants restent prives.
+#
+#   Copy-Item tools\deploy.local.ps1.example tools\deploy.local.ps1
+# ----------------------------------------------------------------------------
+
+$DeployConfig = @{
+  # --- Site statique (deploy-front.ps1) ---
+  FtpHost   = 'ftp.exemple.fr'                              # hote FTP de ton hebergement web
+  FtpUser   = 'user_exemple'                                # login FTP
+  RemoteDir = '/sites/exemple.fr'                           # dossier distant servi par ton domaine
+  SiteUrl   = 'https://exemple.fr'                          # NEXT_PUBLIC_SITE_URL au build
+  ApiUrl    = 'https://api.exemple.fr'                      # NEXT_PUBLIC_API_URL au build (= backend)
+  ExportDir = 'C:\Stream\streamerbot-xp-system\exports'    # dossier des exports du bot
+
+  # --- Backend Node (deploy-back.ps1) ---
+  BackendRemote = 'https://github.com/exemple/stream-hub-backend.git'
+  BackendBranch = 'main'
+}

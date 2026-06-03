@@ -277,11 +277,24 @@ powershell -ExecutionPolicy Bypass -File ".\tools\push-to-backend.ps1"
 # attendu : [push] OK - backend mis a jour (users: N).
 ```
 
-### 8d. Déployer le site
+### 8d. Renseigner ta config de déploiement
+
+Les domaines et identifiants FTP **ne sont pas** dans le dépôt. Copie le modèle et
+renseigne tes valeurs (le fichier `deploy.local.ps1` est gitignoré — il reste privé) :
 
 ```powershell
-.\tools\deploy-front.ps1    # build (avec tes exports) + upload FTP
+Copy-Item tools\deploy.local.ps1.example tools\deploy.local.ps1
+# puis édite tools\deploy.local.ps1 : FtpHost, FtpUser, RemoteDir, SiteUrl, ApiUrl
 ```
+
+### 8e. Déployer le site
+
+```powershell
+.\tools\deploy-front.ps1    # npm install si besoin + build (avec tes exports) + upload FTP
+```
+`deploy-front.ps1` installe les dépendances si absentes, build avec tes domaines
+(`deploy.local.ps1`) et tes exports, puis upload en FTP (mot de passe demandé, jamais stocké).
+
 Le site lit alors le backend : le **classement** (polling 45 s) et les **profils viewer**
 se mettent à jour sans rebuild, à chaque push.
 
