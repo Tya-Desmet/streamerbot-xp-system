@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import type { Download } from '@/lib/content';
 import { downloadJson } from '@/lib/exportJson';
+import { adminUpload } from '@/lib/adminApi';
 import PublishButton from './PublishButton';
+import { useAdmin } from './AdminAuth';
 
 const KEY = 'sl-admin-downloads';
 const ICONS = ['layers', 'image', 'code', 'package', 'music', 'download'];
@@ -20,6 +22,7 @@ const blank = (): Download => ({
   date: '',
   dls: 0,
   featured: false,
+  downloadable: false,
   tags: [],
   url: '#',
 });
@@ -66,6 +69,25 @@ export default function DownloadsEditor({ seed }: { seed: Download[] }) {
   const set = <K extends keyof Download>(k: K, v: Download[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
 
+  const { token } = useAdmin();
+  const [upMsg, setUpMsg] = useState('');
+
+  async function handleUpload(file?: File) {
+    if (!file || !token) return;
+    setUpMsg('Envoi…');
+    const r = await adminUpload(file, token);
+    if (r) {
+      const mb = r.size / (1024 * 1024);
+      const sizeStr = mb >= 1 ? `${mb.toFixed(1)} Mo` : `${Math.max(1, Math.round(r.size / 1024))} Ko`;
+      const ext = (file.name.split('.').pop() || '').toUpperCase();
+      setDraft((d) => ({ ...d, url: r.url, downloadable: true, ext: ext || d.ext, size: sizeStr }));
+      setUpMsg('Fichier déposé ✓');
+    } else {
+      setUpMsg("Échec de l'upload");
+    }
+    setTimeout(() => setUpMsg(''), 4000);
+  }
+
   return (
     <div className="flex" style={{ flexDirection: 'column', gap: 16 }}>
       {/* Formulaire */}
@@ -87,6 +109,23 @@ export default function DownloadsEditor({ seed }: { seed: Download[] }) {
         <label className="flex center gap-s" style={{ fontSize: 14 }}>
           <input type="checkbox" checked={!!draft.featured} onChange={(e) => set('featured', e.target.checked)} /> En avant
         </label>
+        <label className="flex center gap-s" style={{ fontSize: 14 }}>
+          <input type="checkbox" checked={!!draft.downloadable} onChange={(e) => set('downloadable', e.target.checked)} /> Téléchargeable
+        </label>
+        {token ? (
+          <div className="flex center gap-s" style={{ gridColumn: '1 / -1', flexWrap: 'wrap' }}>
+            <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+              Déposer un fichier…
+              <input type="file" style={{ display: 'none' }} onChange={(e) => handleUpload(e.target.files?.[0])} />
+            </label>
+            {upMsg ? <span className="muted" style={{ fontSize: 12 }}>{upMsg}</span> : null}
+            {draft.url && draft.url !== '#' ? <span className="muted truncate" style={{ fontSize: 12, maxWidth: 240 }}>{draft.url}</span> : null}
+          </div>
+        ) : (
+          <p className="muted" style={{ fontSize: 12, gridColumn: '1 / -1' }}>
+            Connecte-toi au backend pour déposer un fichier, ou colle une URL externe dans « URL de téléchargement ».
+          </p>
+        )}
         <div className="flex gap-s" style={{ gridColumn: '1 / -1' }}>
           <button className="btn btn-primary btn-sm" type="button" onClick={save}>
             {items.some((x) => x.id === draft.id) ? 'Enregistrer' : 'Ajouter'}

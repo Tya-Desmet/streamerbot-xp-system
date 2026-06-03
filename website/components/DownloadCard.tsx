@@ -86,7 +86,7 @@ export default function DownloadCard({ d, featured = false }: { d: Download; fea
           {meta}
           {d.dls ? ` · ${new Intl.NumberFormat('fr-FR').format(d.dls)} DL` : ''}
         </span>
-        {d.url && d.url !== '#' ? (
+        {d.downloadable && d.url && d.url !== '#' ? (
           <a className="btn btn-primary btn-sm" href={d.url} download target="_blank" rel="noopener noreferrer">
             Télécharger
           </a>

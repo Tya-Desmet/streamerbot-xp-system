@@ -62,6 +62,7 @@ export type Download = {
   date?: string;
   dls?: number;
   featured?: boolean;
+  downloadable?: boolean; // true = bouton « Télécharger » (sinon « Bientôt »)
   tags: string[];
   url?: string;
 };
