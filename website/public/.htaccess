@@ -1,0 +1,12 @@
+# En-têtes de sécurité (Infomaniak / Apache). Copié dans out/ au build.
+# ⚠️ Remplace https://api.EXEMPLE.tld par ton vrai domaine d'API (V3.6/B07),
+#    ou retire-le de connect-src si tu n'utilises pas le backend.
+
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://static-cdn.jtvnw.net; connect-src 'self' https://decapi.me https://api.EXEMPLE.tld; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=()"
+</IfModule>

@@ -29,6 +29,7 @@ export default function PlayerRow({
           #{player.rank}
         </span>
         <span
+          aria-hidden="true"
           className="ava round"
           style={{ width: 40, height: 40, fontSize: 14, background: avatarGradient(player.username) }}
         >

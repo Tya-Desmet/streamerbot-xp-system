@@ -14,6 +14,9 @@ button { cursor: pointer; background: none; border: none; }
 img, svg { display: block; max-width: 100%; }
 html { scroll-behavior: smooth; }
 
+/* Accessibilité : focus clavier visible */
+:focus-visible { outline: 2px solid var(--neon-2); outline-offset: 2px; border-radius: 4px; }
+
 /* ---------- Tokens (base / thème "Shibuya" — sakura jour) ---------- */
 :root {
   --font-display: var(--font-space-grotesk, "Space Grotesk"), system-ui, sans-serif;
@@ -211,7 +214,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height
 /* ---------- Sections / layout helpers ---------- */
 .section { padding: 70px 0; }
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 34px; flex-wrap: wrap; }
-.section-head h2 { font-size: clamp(28px, 4vw, 44px); }
+.section-head h1, .section-head h2 { font-size: clamp(28px, 4vw, 44px); }
 .section-head p { color: var(--text-dim); max-width: 46ch; }
 .grid { display: grid; gap: 18px; }
 

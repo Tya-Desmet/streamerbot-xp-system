@@ -35,7 +35,10 @@ export default function Footer({ socials }: { socials: Socials }) {
 
         <div className="fine">
           <span>© {year} Mystya · StreamLevels</span>
-          <span>Propulsé par Streamer.bot XP System</span>
+          <span className="flex center gap-m" style={{ flexWrap: 'wrap' }}>
+            <a href="/privacy/" style={{ textDecoration: 'underline' }}>Confidentialité</a>
+            <span>Propulsé par Streamer.bot XP System</span>
+          </span>
         </div>
       </div>
     </footer>

@@ -9,7 +9,7 @@ export default function FriendCard({ friend }: { friend: Friend }) {
   return (
     <div className={`friend ${friend.live ? 'live' : 'offline'}`}>
       <div className="top">
-        <div className="ava round" style={{ background: grad }}>
+        <div aria-hidden="true" className="ava round" style={{ background: grad }}>
           {initials}
         </div>
         <div style={{ minWidth: 0 }}>

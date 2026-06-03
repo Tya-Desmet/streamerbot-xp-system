@@ -5,6 +5,7 @@ import ProfileHeader from '@/components/ProfileHeader';
 import XpBar from '@/components/XpBar';
 import StatGrid from '@/components/StatGrid';
 import Reveal from '@/components/Reveal';
+import { buildMetadata } from '@/lib/seo';
 
 // Export statique : une page par profil, et uniquement celles-ci.
 export const dynamicParams = false;
@@ -19,7 +20,11 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { username } = await params;
   const profile = getProfile(username);
-  return { title: (profile ? profile.displayName : username) + ' — Stream Hub' };
+  const name = profile ? profile.displayName : username;
+  const description = profile
+    ? `Profil de ${name} — niveau ${profile.level}, rang #${profile.rank} au classement.`
+    : `Profil ${name}.`;
+  return buildMetadata({ title: name, description, path: `/viewer/${username}/` });
 }
 
 export default async function ViewerPage({ params }: { params: Promise<{ username: string }> }) {

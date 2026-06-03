@@ -6,6 +6,12 @@ import LivePreview from '@/components/LivePreview';
 import SocialCard, { SOCIAL_META, type Platform } from '@/components/SocialCard';
 import Podium from '@/components/Podium';
 import Reveal from '@/components/Reveal';
+import { buildMetadata } from '@/lib/seo';
+
+export const metadata = buildMetadata({
+  description: 'Le hub de la communauté : classement XP, copains en live, planning et ressources.',
+  path: '/',
+});
 
 export default function Home() {
   const meta = getMeta();

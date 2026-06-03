@@ -38,6 +38,7 @@ function PodiumCard({ p, big }: { p: LeaderboardPlayer; big: boolean }) {
         #{p.rank} · {m.tag}
       </span>
       <span
+        aria-hidden="true"
         className="ava round"
         style={{ width: s, height: s, fontSize: s * 0.36, background: avatarGradient(p.username), margin: '6px 0' }}
       >

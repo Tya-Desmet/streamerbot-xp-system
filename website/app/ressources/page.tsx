@@ -1,9 +1,13 @@
-import type { Metadata } from 'next';
 import { getDownloads } from '@/lib/content';
 import DownloadsBrowser from '@/components/DownloadsBrowser';
 import Reveal from '@/components/Reveal';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = { title: 'Ressources — Stream Hub' };
+export const metadata = buildMetadata({
+  title: 'Ressources',
+  description: 'Overlays, packs, templates et ressources gratuites à télécharger.',
+  path: '/ressources/',
+});
 
 export default function RessourcesPage() {
   const items = getDownloads();
@@ -15,9 +19,9 @@ export default function RessourcesPage() {
           <div className="section-head">
             <div>
               <div className="eyebrow">Ressources · リソース</div>
-              <h2>
+              <h1>
                 À <span className="text-grad">télécharger</span>
-              </h2>
+              </h1>
               <p className="dim">Overlays, packs, templates — gratuits, prêts à l&apos;emploi.</p>
             </div>
           </div>
