@@ -20,14 +20,21 @@ Système de progression XP pour streamers Twitch — intégration Streamer.bot +
 | Watchtime hybride (présence SB + activité chat) | ✅ V2 |
 | WatchStreak — bonus de fidélité progressif | ✅ V2 |
 | Configuration centralisée (un seul `config.json`) | ✅ V2 |
+| Export web (`EXPORT_Snapshot` → JSON meta/leaderboard/profils) | ✅ V3 |
+| Hub web public : classement + profils viewer + planning | ✅ V3 |
+| Leaderboard & profils **live** (push bot → backend → site) | ✅ V3 |
 
 ---
 
 ## Architecture
 
 ```
-Twitch Chat ──→ Streamer.bot (6 actions C#) ──→ data/users/*.json
-                                             ──→ WebSocket ──→ OBS Browser Sources
+Twitch Chat ─→ Streamer.bot (actions C#) ─→ data/users/*.json
+                                         ├→ WebSocket ─→ OBS Browser Sources
+                                         └→ EXPORT_Snapshot ─→ exports/*.json
+                                                                  │
+                  push-to-backend.ps1 (tâche planifiée) ◀─────────┘
+                            └→ POST /api/push ─→ backend Node ─→ site public (live)
 ```
 
 **Une seule variable globale dans Streamer.bot :** `xp_configPath` → chemin vers `configs/config.json`
@@ -38,8 +45,9 @@ Twitch Chat ──→ Streamer.bot (6 actions C#) ──→ data/users/*.json
 
 1. Placer le projet dans un dossier stable et créer `data/users/`
 2. Éditer `configs/config.json` — renseigner `dataPath`
-3. Dans Streamer.bot : créer `xp_configPath`, activer WebSocket, importer les 6 actions
+3. Dans Streamer.bot : créer `xp_configPath`, activer WebSocket, importer les actions
 4. Dans OBS : ajouter les 2 Browser Sources
+5. *(Optionnel)* Hub web public : activer l'export + push, déployer le site → [INSTALLATION.md §8](docs/INSTALLATION.md)
 
 → Guide complet : [docs/INSTALLATION.md](docs/INSTALLATION.md)
 
@@ -65,7 +73,13 @@ streamerbot-xp-system/
 │   ├── titles.json       # Titres personnalisés
 │   └── excluded-users.json
 ├── themes/               # Thèmes visuels
-└── data/users/           # Profils viewers (JSON, gitignorés)
+├── data/users/           # Profils viewers (JSON, gitignorés)
+│
+│   # ── Hub web (V3) ──
+├── website/              # Site public Next.js (export statique)
+├── backend/              # API Node/Express (leaderboard + profils live)
+├── tools/                # Scripts : build-actions, push-to-backend, deploy-*
+└── exports/              # JSON générés par EXPORT_Snapshot (gitignorés)
 ```
 
 ---
@@ -74,13 +88,16 @@ streamerbot-xp-system/
 
 | Document | Contenu |
 |---|---|
-| [INSTALLATION.md](docs/INSTALLATION.md) | Setup complet étape par étape (~20 min) |
+| [INSTALLATION.md](docs/INSTALLATION.md) | Setup complet étape par étape (~20 min) + section 8 « Hub web » |
 | [CONFIGURATION.md](docs/CONFIGURATION.md) | Référence complète de config.json |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Flux de données, services, UserProfile |
+| [DEPLOY.md](docs/DEPLOY.md) | Mise en ligne du site + backend (Infomaniak) |
+| [EXPORT_CONTRACT.md](docs/EXPORT_CONTRACT.md) | Schéma des exports JSON (bot ⇄ hub web) |
 | [THEMES.md](docs/THEMES.md) | Changer et créer des thèmes |
 | [TITLES.md](docs/TITLES.md) | Configurer les titres par niveau |
 | [BOT_EXCLUSION.md](docs/BOT_EXCLUSION.md) | Gérer la liste des bots exclus |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Diagnostic et résolution de problèmes |
+| [tools/README-tools.md](tools/README-tools.md) | Scripts de build, push et déploiement |
 
 ---
 
@@ -90,7 +107,7 @@ streamerbot-xp-system/
 |---|---|---|
 | V1 | ✅ Fonctionnelle | XP chat, levels, leaderboard, profile card, 6 thèmes |
 | V2 | ✅ Implémentée | Watchtime hybride, !rank, titres, bot exclusion, config centralisée |
-| V3 | 🔲 Planifiée | Export web, statistiques avancées |
+| V3 | ✅ Implémentée | Hub web public : export, push live, classement + profils viewer, planning |
 | V4 | 🔲 Planifiée | Boss system, récompenses, saisons, achievements |
 
 ---
