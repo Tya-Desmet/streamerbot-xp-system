@@ -3,8 +3,8 @@
 Guide de mise en ligne complet. Architecture :
 
 ```
-Bot (PC, Streamer.bot) ──exports/──▶ push-exports.ps1 ──▶  https://api.<domaine>  (backend Node)
-                                                                    ▲ GET /api/*
+Bot (PC, Streamer.bot) ──exports/──▶ push-to-backend.ps1 ──▶ https://api.<domaine> (backend Node)
+                                       (tâche planifiée)              ▲ GET /api/*
 Visiteurs ──────────────────────────▶ https://<domaine>  (site statique) ──fetch──┘
 ```
 
@@ -78,15 +78,47 @@ Note-les : `ADMIN_PASSWORD`, `JWT_SECRET`, `PUSH_API_KEY`.
 
 ---
 
-## 4. Temps réel (optionnel — si tu veux le leaderboard live)
+## 4. Temps réel (optionnel — leaderboard + profils live)
 
-Sur le PC du bot, planifier le pusher (Planificateur de tâches Windows, ex. toutes les 2 min
-pendant le live) :
-```powershell
-.\tools\push-exports.ps1 -ApiUrl "https://api.<domaine>" -ApiKey "<PUSH_API_KEY>" `
-    -ExportDir "C:\Stream\streamerbot-xp-system\exports"
+Le bot ne peut pas faire de HTTP fiable lui-même : une tâche Windows pousse les exports
+vers le backend. Les secrets vivent dans `config.json` (jamais en arguments de tâche).
+
+### 4a. Activer le push dans `config.json` (PC du bot)
+
+```json
+"export": {
+  "enabled":     true,
+  "pushEnabled": true,
+  "pushUrl":     "https://api.<domaine>",
+  "pushApiKey":  "<PUSH_API_KEY>"
+}
 ```
-Le leaderboard du site se rafraîchit alors via l'API (polling 45 s).
+> `pushApiKey` doit être **identique** au `PUSH_API_KEY` du backend (étape 2).
+
+### 4b. Créer la tâche planifiée
+
+`tools\push-to-backend.ps1` lit `config.json`, **assemble** le payload depuis
+`exports/` (meta + leaderboard + users) et le POST sur `/api/push`.
+
+```
+Planificateur de tâches → Créer une tâche
+  Déclencheur : à intervalle régulier (ex. toutes les 1 h, ou 2 min pendant le live)
+  Action      : Démarrer un programme
+    Programme/script : powershell.exe
+    Arguments        : -NonInteractive -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass
+                       -File "C:\Stream\streamerbot-xp-system\tools\push-to-backend.ps1"
+```
+> Pointer le `-File` vers la copie de **ton** install (à côté de `configs/` et `exports/`) :
+> sans `-ConfigPath`, le script trouve seul le `config.json` et les `exports/` voisins.
+
+### 4c. Vérifier
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\tools\push-to-backend.ps1"
+# attendu : [push] OK - backend mis a jour (users: N).
+```
+Le leaderboard (polling 45 s) et les profils viewer du site se rafraîchissent ensuite
+via l'API.
 
 ---
 

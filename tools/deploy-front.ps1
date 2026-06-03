@@ -55,8 +55,13 @@ foreach ($f in $files) {
   $cargs.Add('--upload-file'); $cargs.Add($f.FullName)
   $cargs.Add($remote)
 
-  & curl.exe $cargs.ToArray()
-  if ($LASTEXITCODE -ne 0) { $fail++; if ($fail -le 5) { Write-Warning "Echec : $rel" } }
+  $ok = $false
+  for ($try = 1; $try -le 3; $try++) {
+    & curl.exe $cargs.ToArray()
+    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    if ($try -lt 3) { Start-Sleep -Seconds 2 }
+  }
+  if (-not $ok) { $fail++; if ($fail -le 5) { Write-Warning "Echec : $rel" } }
   $i++
   if ($i % 25 -eq 0) { Write-Host ("  ... {0}/{1}" -f $i, $files.Count) }
 }

@@ -1,5 +1,5 @@
 {
-  "nextLiveISO": "2026-06-02T20:00:00+02:00",
+  "nextLiveISO": "2026-06-04T19:30:00+02:00",
   "timezone": "France (CET)",
   "days": [
     { "day": "Lundi", "date": "2 juin", "off": false, "game": "Valorant", "mode": "Ranked Ascension", "time": "20:00", "dur": "3h", "note": "On pousse vers Immortel, viens callbacks.", "tag": "Compétitif" },

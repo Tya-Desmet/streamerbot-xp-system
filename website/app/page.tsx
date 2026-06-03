@@ -9,8 +9,14 @@ import Reveal from '@/components/Reveal';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  description: 'Le hub de la communauté : classement XP, copains en live, planning et ressources.',
+  // Pas de `title` → hérite du default layout "Mystya — Streameuse Twitch" (la page la mieux placée pour le mot-clé "mystya").
+  description:
+    'Mystya est une streameuse Twitch francophone. Retrouve le classement XP de la communauté, le planning des lives, les copains en live et toutes les ressources.',
   path: '/',
+  keywords: [
+    'Mystya', 'mystya twitch', 'mystya streameuse', 'mystya live',
+    'classement XP stream', 'hub communauté stream',
+  ],
 });
 
 export default function Home() {

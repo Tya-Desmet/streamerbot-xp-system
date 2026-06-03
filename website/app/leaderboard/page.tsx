@@ -5,9 +5,10 @@ import JsonLd from '@/components/JsonLd';
 import { buildMetadata, SITE_URL } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  title: 'Classement',
-  description: 'Le classement XP de la communauté : podium, niveaux et watchtime.',
+  title: 'Classement XP',
+  description: 'Classement XP de la communauté Mystya : podium, niveaux, watchtime et profils viewers.',
   path: '/leaderboard/',
+  keywords: ['classement XP Mystya', 'viewers Mystya', 'niveau stream Mystya'],
 });
 
 export default function LeaderboardPage() {

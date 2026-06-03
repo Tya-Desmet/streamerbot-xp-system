@@ -218,6 +218,75 @@ Thèmes : `default` · `rpg` · `cyber` · `minimal` · `tokyo` · `sakura`
 
 ---
 
+## 8. Hub web (optionnel — site public + leaderboard live)
+
+Le système peut publier un **site public** (classement, profils viewer, planning) sur
+ton domaine. Architecture : le bot exporte des JSON → une tâche les pousse vers un
+backend → le site lit le backend en temps réel.
+
+> Mise en ligne complète (backend Infomaniak, domaine, secrets) : **[DEPLOY.md](DEPLOY.md)**.
+> Ci-dessous, le branchement côté **PC du bot** une fois le backend en ligne.
+
+### 8a. Activer l'export
+
+Dans `config.json` :
+```json
+"export": {
+  "enabled":      true,
+  "path":         "",
+  "topCount":     50,
+  "writeProfiles": true,
+  "season":       "all-time",
+  "streamerName": "TonNom"
+}
+```
+`path` vide → les fichiers vont dans `<install>\exports\`. Créer l'action `EXPORT_Snapshot`
+(`actions/EXPORT_Snapshot.cs`, trigger `Core → Timer`, ex. 5 min) pour générer
+`exports/meta.json`, `exports/leaderboard.json` et `exports/users/*.json`.
+
+→ Forme des fichiers : [EXPORT_CONTRACT.md](EXPORT_CONTRACT.md)
+
+### 8b. Activer le push vers le backend
+
+Toujours dans `config.json`, compléter la section `export` :
+```json
+  "pushEnabled": true,
+  "pushUrl":     "https://api.tondomaine.fr",
+  "pushApiKey":  "<la meme cle que PUSH_API_KEY du backend>"
+```
+
+### 8c. Planifier le push (tâche Windows)
+
+`tools\push-to-backend.ps1` lit `config.json`, assemble le payload depuis `exports/`
+et le POST sur `/api/push`. Les secrets restent dans `config.json`.
+
+```
+Planificateur de tâches → Créer une tâche
+  Déclencheur : toutes les heures (ou 2 min pendant le live)
+  Action      : Démarrer un programme
+    Programme : powershell.exe
+    Arguments : -NonInteractive -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass
+                -File "C:\Stream\streamerbot-xp-system\tools\push-to-backend.ps1"
+```
+> Le `-File` doit pointer la copie de **ton** install (à côté de `configs/` et `exports/`).
+> Sans `-ConfigPath`, le script trouve seul son `config.json` et ses `exports/` voisins.
+
+Test manuel :
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\tools\push-to-backend.ps1"
+# attendu : [push] OK - backend mis a jour (users: N).
+```
+
+### 8d. Déployer le site
+
+```powershell
+.\tools\deploy-front.ps1    # build (avec tes exports) + upload FTP
+```
+Le site lit alors le backend : le **classement** (polling 45 s) et les **profils viewer**
+se mettent à jour sans rebuild, à chaque push.
+
+---
+
 ## Dépannage rapide
 
 | Symptôme | Cause probable |
@@ -227,5 +296,9 @@ Thèmes : `default` · `rpg` · `cyber` · `minimal` · `tokyo` · `sakura`
 | Overlay noir dans OBS | WebSocket inactif, ou rafraîchir le cache OBS |
 | `!rank` ne répond pas | Trigger manquant, ou viewer sans profil |
 | Watchtime non distribué | `XP_WatchTime_V2` non créée, ou Live Update non activé |
+| Site : classement figé / pas à jour | Tâche de push non lancée, ou `pushUrl`/`pushApiKey` faux dans `config.json` |
+| `[push] ECHEC HTTP 401` | `pushApiKey` ≠ `PUSH_API_KEY` du backend |
+| Profil viewer ≠ classement | Site pas redéployé après changement de code — relancer `deploy-front.ps1` |
+| Tâche pousse de vieilles données | `-File` pointe une install sans les `exports/` frais (vérifier le chemin) |
 
 → Guide détaillé : [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

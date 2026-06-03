@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-type Parts = { d: number; h: number; m: number; s: number; done: boolean };
+// Après 4 h de dépassement, la date est clairement passée (pas "en live / bientôt").
+const PAST_THRESHOLD_MS = 4 * 60 * 60 * 1000;
+
+type Parts = { d: number; h: number; m: number; s: number; done: boolean; past: boolean };
 
 function compute(target: number): Parts {
   const ms = target - Date.now();
-  if (ms <= 0) return { d: 0, h: 0, m: 0, s: 0, done: true };
+  if (ms <= 0) return { d: 0, h: 0, m: 0, s: 0, done: true, past: -ms > PAST_THRESHOLD_MS };
   const s = Math.floor(ms / 1000);
   return {
     d: Math.floor(s / 86400),
@@ -14,6 +17,7 @@ function compute(target: number): Parts {
     m: Math.floor((s % 3600) / 60),
     s: s % 60,
     done: false,
+    past: false,
   };
 }
 
@@ -51,6 +55,13 @@ export default function Countdown({ target }: { target: string }) {
   }
 
   if (parts.done) {
+    if (parts.past) {
+      return (
+        <span className="chip" style={{ opacity: 0.6 }}>
+          Prochain live à venir
+        </span>
+      );
+    }
     return (
       <span className="chip">
         <span className="dot" /> En live / très bientôt
