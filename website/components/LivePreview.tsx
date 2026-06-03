@@ -3,18 +3,28 @@
 import { useEffect, useState } from 'react';
 import { checkLive, livePreview } from '@/lib/live';
 
+const RECHECK_MS = 2 * 60 * 1000; // re-vérification toutes les 2 min
+
 // Aperçu du live du streamer : affiché uniquement quand il est en live (decapi),
-// avec la miniature publique Twitch.
+// avec la miniature publique Twitch. Re-check périodique pour détecter le début du live.
 export default function LivePreview({ channel, twitchUrl }: { channel: string; twitchUrl: string }) {
   const [live, setLive] = useState(false);
+  const [tick, setTick] = useState(0); // force le re-rendu pour rafraîchir la miniature
 
   useEffect(() => {
     let cancelled = false;
-    checkLive(channel).then((v) => {
-      if (!cancelled) setLive(v);
-    });
+    async function check() {
+      const v = await checkLive(channel);
+      if (!cancelled) {
+        setLive(v);
+        if (v) setTick((t) => t + 1); // rafraîchit la miniature si en live
+      }
+    }
+    check();
+    const id = setInterval(check, RECHECK_MS);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
   }, [channel]);
 
@@ -37,6 +47,7 @@ export default function LivePreview({ channel, twitchUrl }: { channel: string; t
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={livePreview(channel)}
+        key={tick}
         alt="Aperçu du live"
         width={320}
         height={180}

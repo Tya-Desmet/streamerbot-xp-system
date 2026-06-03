@@ -8,14 +8,25 @@
 
 ## Mode de transport
 
-**Par défaut (V3)** : fichiers JSON dans `exports/`, générés par `EXPORT_Snapshot`
-quand `config.export.enabled = true`.
+**Mode fichier (toujours actif)** : JSON dans `exports/`, générés par `EXPORT_Snapshot`
+quand `config.export.enabled = true`. C'est ce que le **build du site** consomme.
 
-**Évolution future opt-in** : une API HTTP pourra servir la **même forme** sur
-`/api/*`. Le consommateur (site) ne distingue pas les deux modes — schéma identique.
+**Mode HTTP / push (opt-in, implémenté)** : quand `config.export.pushEnabled = true`,
+la tâche `tools/push-to-backend.ps1` assemble ces mêmes fichiers et les POST sur
+`/api/push`. Le backend les ressert **à l'identique** :
+
+| endpoint backend | source | consommé par |
+|---|---|---|
+| `GET /api/leaderboard` | dernier `leaderboard` poussé | classement du site (polling 45 s) |
+| `GET /api/users/:id` | dernier `users[:id]` poussé | profil viewer du site |
+
+Le site ne distingue pas les deux modes — **schéma identique**. Sans backend
+(`NEXT_PUBLIC_API_URL` vide), il lit les fichiers figés au build.
 
 ```
-Streamer.bot ──(lecture seule des profils)──▶ EXPORT_Snapshot ──▶ exports/*.json ──▶ Hub web
+Streamer.bot ─(lecture seule)─▶ EXPORT_Snapshot ─▶ exports/*.json ─┬─▶ build du site (figé)
+                                                                    └─▶ push-to-backend.ps1
+                                                                          └─▶ POST /api/push ─▶ backend ─▶ site (live)
 ```
 
 ---

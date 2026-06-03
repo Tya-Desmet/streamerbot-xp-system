@@ -31,6 +31,7 @@ docs/wordklow IA
 Thumbs.db
 desktop.ini
 $RECYCLE.BIN/
+*.lnk
 
 # ── Logs ──
 *.log

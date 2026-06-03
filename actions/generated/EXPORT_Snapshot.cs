@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : EXPORT_Snapshot (V3)
+// ACTION : EXPORT_Snapshot (V3.8)
 // ============================================================
-// RÔLE : Lecture seule. Exporte les données du système XP vers
-//         des fichiers JSON (contrat V3) consommés par le hub web.
-//         Filtre les bots avant export. N'écrit aucun profil.
+// RÔLE : Exporte les données XP en fichiers JSON ET pousse un
+//         snapshot complet vers le backend via POST /api/push.
+//         Filtre les bots avant export. N'écrit aucun XP.
 //
 // INSTALLATION DANS STREAMER.BOT :
 //   1. Actions → Add Action → nommer "EXPORT_Snapshot"
@@ -945,16 +945,15 @@ public class CPHInline
             if (!bots.IsExcluded(u.Username))
                 filtered.Add(u);
 
-        // 4. Trier (Level↓ XP↓ WatchTime↓) — réutilise la gateway de tri
+        // 4. Trier (Level↓ XP↓ WatchTime↓)
         var xp     = new XpService(repo);
         var ranked = xp.PrepareLeaderboard(filtered);
 
         var titles = new TitleService();
 
         // 5. meta.json
-        exp.WriteJson(
-            Path.Combine(exportDir, "meta.json"),
-            exp.BuildMeta(1, now, season, config.Export.StreamerName));
+        var metaObj = exp.BuildMeta(1, now, season, config.Export.StreamerName);
+        exp.WriteJson(Path.Combine(exportDir, "meta.json"), metaObj);
 
         // 6. leaderboard.json (Top N)
         var topCount = ranked.Count < config.Export.TopCount ? ranked.Count : config.Export.TopCount;
@@ -965,15 +964,15 @@ public class CPHInline
             var title = titles.GetTitle(e.Level, projectPath, config.Theme);
             players.Add(exp.BuildLeaderboardEntry(e, title));
         }
-        exp.WriteJson(
-            Path.Combine(exportDir, "leaderboard.json"),
-            exp.BuildLeaderboardFile(players, now, season));
+        var lbObj = exp.BuildLeaderboardFile(players, now, season);
+        exp.WriteJson(Path.Combine(exportDir, "leaderboard.json"), lbObj);
 
-        // 7. profils publics (optionnel)
+        // 7. Profils publics — écriture fichier + collecte pour le push HTTP
+        var allProfiles     = new List<PublicProfile>();
         var profilesWritten = 0;
-        if (config.Export.WriteProfiles == true)
+        var needProfiles    = config.Export.WriteProfiles == true || config.Export.PushEnabled == true;
+        if (needProfiles)
         {
-            // rang issu du classement complet (ranked[i].Rank), pas seulement du Top N
             for (var i = 0; i < ranked.Count; i++)
             {
                 var e    = ranked[i];
@@ -983,15 +982,29 @@ public class CPHInline
                 var progress = xp.GetProgress(user);
                 var title    = titles.GetTitle(user.Level, projectPath, config.Theme);
                 var profile  = exp.BuildPublicProfile(user, progress, e.Rank, title);
+                allProfiles.Add(profile);
 
-                var ok = exp.WriteJson(
-                    Path.Combine(exportDir, "users", user.Username + ".json"),
-                    profile);
-                if (ok) profilesWritten++;
+                if (config.Export.WriteProfiles == true)
+                {
+                    var ok = exp.WriteJson(
+                        Path.Combine(exportDir, "users", user.Username + ".json"),
+                        profile);
+                    if (ok) profilesWritten++;
+                }
             }
         }
 
-        // 8. Exposer le résultat
+        // 8. Payload push (si pushEnabled)
+        // Le POST est fait par la tache planifiee Windows : tools/push-to-backend.ps1
+        if (config.Export.PushEnabled == true)
+        {
+            var payload     = new { meta = metaObj, leaderboard = lbObj, users = allProfiles };
+            var payloadPath = Path.Combine(exportDir, "push_payload.json");
+            exp.WriteJson(payloadPath, payload);
+            CPH.LogInfo("[EXPORT_Snapshot] push_payload.json pret.");
+        }
+
+        // 9. Exposer le résultat
         CPH.SetArgument("export_enabled", true);
         CPH.SetArgument("export_dir", exportDir);
         CPH.SetArgument("export_players", players.Count);

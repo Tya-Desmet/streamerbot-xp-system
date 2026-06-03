@@ -25,9 +25,14 @@ export default function PlanningView({ seed }: { seed: Schedule }) {
   const days = schedule.days ?? [];
   const next = days.find((d) => !d.off);
 
+  // Masquer la carte si nextLiveISO est clairement dans le passé (> 4 h de dépassement).
+  const PAST_MS = 4 * 60 * 60 * 1000;
+  const nextTs = schedule.nextLiveISO ? new Date(schedule.nextLiveISO).getTime() : 0;
+  const nextIsPast = nextTs > 0 && Date.now() - nextTs > PAST_MS;
+
   return (
     <>
-      {schedule.nextLiveISO && next ? (
+      {schedule.nextLiveISO && next && !nextIsPast ? (
         <div className="card" style={{ padding: '26px 28px', marginBottom: 28 }}>
           <span className="chip">
             <span className="dot" /> PROCHAIN LIVE

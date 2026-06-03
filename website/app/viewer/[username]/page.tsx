@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getAllUsernames, getProfile } from '@/lib/data';
-import ProfileHeader from '@/components/ProfileHeader';
-import XpBar from '@/components/XpBar';
-import StatGrid from '@/components/StatGrid';
+import { getAllUsernames, getProfile, getMeta } from '@/lib/data';
+import LiveProfile from '@/components/LiveProfile';
 import Reveal from '@/components/Reveal';
 import { buildMetadata } from '@/lib/seo';
 
@@ -32,6 +30,8 @@ export default async function ViewerPage({ params }: { params: Promise<{ usernam
   const profile = getProfile(username);
   if (!profile) notFound();
 
+  const generatedAt = getMeta().generatedAt;
+
   return (
     <main className="section">
       <div className="wrap" style={{ maxWidth: 720 }}>
@@ -45,17 +45,7 @@ export default async function ViewerPage({ params }: { params: Promise<{ usernam
         </Reveal>
 
         <Reveal>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 12 }}>
-            <ProfileHeader profile={profile} />
-            <div className="card" style={{ padding: '20px 24px' }}>
-              <XpBar
-                percentage={profile.percentage}
-                xpIntoLevel={profile.xpIntoLevel}
-                xpForNext={profile.xpForNext}
-              />
-            </div>
-            <StatGrid profile={profile} />
-          </div>
+          <LiveProfile seed={profile} seedGeneratedAt={generatedAt} />
         </Reveal>
       </div>
     </main>

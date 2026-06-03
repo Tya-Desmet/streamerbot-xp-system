@@ -14,6 +14,13 @@ export function leaderboardUrl(): string {
   return base ? `${base}/api/leaderboard` : '/data/leaderboard.json';
 }
 
+// URL d'un profil viewer : API temps réel si configurée, sinon le fichier statique exporté.
+export function userUrl(username: string): string {
+  const u = encodeURIComponent(username);
+  const base = apiBase();
+  return base ? `${base}/api/users/${u}` : `/data/users/${u}.json`;
+}
+
 // Récupère un type de contenu depuis l'API ; renvoie `fallback` si pas d'API ou erreur.
 export async function fetchContent<T>(kind: string, fallback: T): Promise<T> {
   const base = apiBase();

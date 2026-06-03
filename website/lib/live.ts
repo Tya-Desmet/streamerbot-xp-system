@@ -23,7 +23,25 @@ export async function checkLive(channel: string): Promise<boolean> {
   }
 }
 
+// Nombre de viewers actuels. Retourne 0 si hors-ligne ou en cas d'erreur.
+export async function checkViewers(channel: string): Promise<number> {
+  if (!channel) return 0;
+  try {
+    const res = await fetch(`https://decapi.me/twitch/viewercount/${encodeURIComponent(channel)}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return 0;
+    const txt = (await res.text()).trim();
+    const n = parseInt(txt, 10);
+    return Number.isNaN(n) ? 0 : n;
+  } catch {
+    return 0;
+  }
+}
+
 // URL d'aperçu live publique de Twitch (valide uniquement quand la chaîne est en live).
+// Cache-buster par tranche de 30 s pour forcer le rafraîchissement de la miniature.
 export function livePreview(channel: string, w = 440, h = 248): string {
-  return `https://static-cdn.jtvnw.net/previews-ttv/live_user_${channel}-${w}x${h}.jpg`;
+  const bust = Math.floor(Date.now() / 30000);
+  return `https://static-cdn.jtvnw.net/previews-ttv/live_user_${channel}-${w}x${h}.jpg?t=${bust}`;
 }

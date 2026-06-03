@@ -4,9 +4,10 @@ import Reveal from '@/components/Reveal';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  title: 'Planning',
-  description: 'Le programme des streams de la semaine et le compte à rebours du prochain live.',
+  title: 'Planning des streams',
+  description: 'Programme des lives de Mystya — horaires, jeux de la semaine et compte à rebours du prochain stream.',
   path: '/planning/',
+  keywords: ['planning stream Mystya', 'prochain live Mystya', 'horaires stream Mystya'],
 });
 
 export default function PlanningPage() {

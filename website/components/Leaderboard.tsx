@@ -49,6 +49,7 @@ export default function Leaderboard({ seed }: { seed: LeaderboardData }) {
         /* hors-ligne : on garde l'état courant */
       }
     }
+    refetch();
     const id = setInterval(refetch, REFRESH_MS);
     return () => {
       cancelled = true;
