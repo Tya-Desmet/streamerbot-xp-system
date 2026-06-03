@@ -38,15 +38,25 @@ $outDir = Join-Path $web "out"
 $base   = (Resolve-Path $outDir).Path
 $files  = Get-ChildItem $outDir -Recurse -File
 $rd     = $RemoteDir.Trim('/')
-$tls    = if ($NoTls) { @() } else { @('--ssl-reqd') }
 
 Write-Host ("== 2/3  Upload de {0} fichiers vers {1}/{2} ==" -f $files.Count, $FtpHost, $rd) -ForegroundColor Cyan
 $i = 0; $fail = 0
 foreach ($f in $files) {
   $rel    = $f.FullName.Substring($base.Length + 1) -replace '\\', '/'
   $remote = "ftp://$FtpHost/" + ((@($rd, $rel) | Where-Object { $_ }) -join '/')
-  curl.exe @tls --ftp-create-dirs -s -S -T $f.FullName $remote --user $userArg
-  if ($LASTEXITCODE -ne 0) { $fail++; Write-Warning "Echec : $rel" }
+
+  # Tableau d'arguments explicite (evite tout souci de parsing)
+  $cargs = [System.Collections.Generic.List[string]]::new()
+  if (-not $NoTls) { $cargs.Add('--ssl-reqd') }
+  $cargs.Add('--ftp-create-dirs')
+  $cargs.Add('--silent')
+  $cargs.Add('--show-error')
+  $cargs.Add('--user');        $cargs.Add($userArg)
+  $cargs.Add('--upload-file'); $cargs.Add($f.FullName)
+  $cargs.Add($remote)
+
+  & curl.exe $cargs.ToArray()
+  if ($LASTEXITCODE -ne 0) { $fail++; if ($fail -le 5) { Write-Warning "Echec : $rel" } }
   $i++
   if ($i % 25 -eq 0) { Write-Host ("  ... {0}/{1}" -f $i, $files.Count) }
 }
