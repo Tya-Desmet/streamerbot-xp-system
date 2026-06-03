@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Schedule, ScheduleDay } from '@/lib/content';
 import { downloadJson } from '@/lib/exportJson';
+import PublishButton from './PublishButton';
 
 const KEY = 'sl-admin-schedule';
 
@@ -76,8 +77,9 @@ export default function ScheduleEditor({ seed }: { seed: Schedule }) {
         </div>
       ))}
 
-      <div>
-        <button className="btn btn-primary btn-sm" type="button" onClick={() => downloadJson('schedule.json', sched)}>
+      <div className="flex center gap-s" style={{ flexWrap: 'wrap' }}>
+        <PublishButton kind="schedule" data={sched} />
+        <button className="btn btn-ghost btn-sm" type="button" onClick={() => downloadJson('schedule.json', sched)}>
           Exporter schedule.json
         </button>
       </div>

@@ -2,13 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import type { Friend } from '@/lib/content';
+import { fetchContent } from '@/lib/api';
 import { checkLive, channelFromUrl } from '@/lib/live';
 import FriendCard from './FriendCard';
 
-// Détecte le statut live réel des copains (decapi) côté client, puis re-trie (live d'abord).
-export default function FriendsLive({ friends }: { friends: Friend[] }) {
+// Liste des copains : seed build-time, rafraîchie depuis l'API si dispo.
+// Puis statut live réel détecté via decapi, re-tri (live d'abord).
+export default function FriendsLive({ friends: seed }: { friends: Friend[] }) {
+  const [friends, setFriends] = useState<Friend[]>(seed);
   const [live, setLive] = useState<Record<string, boolean> | null>(null);
 
+  // 1) rafraîchir la liste depuis l'API (sinon garder le seed)
+  useEffect(() => {
+    let cancelled = false;
+    fetchContent<Friend[]>('friends', seed).then((list) => {
+      if (!cancelled && Array.isArray(list)) setFriends(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [seed]);
+
+  // 2) détecter le statut live (decapi) pour la liste courante
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -25,7 +40,6 @@ export default function FriendsLive({ friends }: { friends: Friend[] }) {
     };
   }, [friends]);
 
-  // Avant la réponse decapi : on garde le statut du fichier (évite un flash vide).
   const enriched = friends.map((f) => ({ ...f, live: live ? !!live[f.handle] : f.live }));
   const sorted = [...enriched].sort((a, b) => Number(b.live) - Number(a.live));
 

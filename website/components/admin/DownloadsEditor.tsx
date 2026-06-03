@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Download } from '@/lib/content';
 import { downloadJson } from '@/lib/exportJson';
+import PublishButton from './PublishButton';
 
 const KEY = 'sl-admin-downloads';
 const ICONS = ['layers', 'image', 'code', 'package', 'music', 'download'];
@@ -109,8 +110,9 @@ export default function DownloadsEditor({ seed }: { seed: Download[] }) {
         ))}
       </ul>
 
-      <div className="flex gap-s">
-        <button className="btn btn-primary btn-sm" type="button" onClick={() => downloadJson('downloads.json', items)}>
+      <div className="flex center gap-s" style={{ flexWrap: 'wrap' }}>
+        <PublishButton kind="resources" data={items} />
+        <button className="btn btn-ghost btn-sm" type="button" onClick={() => downloadJson('downloads.json', items)}>
           Exporter downloads.json
         </button>
         <button className="btn btn-ghost btn-sm" type="button" onClick={() => persist(seed)}>Réinitialiser</button>

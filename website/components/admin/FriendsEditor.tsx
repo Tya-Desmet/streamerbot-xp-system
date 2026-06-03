@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Friend } from '@/lib/content';
 import { downloadJson } from '@/lib/exportJson';
 import { channelFromUrl } from '@/lib/live';
+import PublishButton from './PublishButton';
 
 const KEY = 'sl-admin-friends';
 
@@ -98,8 +99,9 @@ export default function FriendsEditor({ seed }: { seed: Friend[] }) {
         ))}
       </ul>
 
-      <div className="flex gap-s">
-        <button className="btn btn-primary btn-sm" type="button" onClick={() => downloadJson('friends.json', items)}>
+      <div className="flex center gap-s" style={{ flexWrap: 'wrap' }}>
+        <PublishButton kind="friends" data={items} />
+        <button className="btn btn-ghost btn-sm" type="button" onClick={() => downloadJson('friends.json', items)}>
           Exporter friends.json
         </button>
         <button className="btn btn-ghost btn-sm" type="button" onClick={() => persist(seed)}>Réinitialiser</button>

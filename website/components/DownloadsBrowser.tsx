@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Download } from '@/lib/content';
+import { fetchContent } from '@/lib/api';
 import DownloadCard from './DownloadCard';
 
-export default function DownloadsBrowser({ items }: { items: Download[] }) {
+export default function DownloadsBrowser({ items: seed }: { items: Download[] }) {
+  const [items, setItems] = useState<Download[]>(seed);
+  const [cat, setCat] = useState('Tous');
+
+  // Rafraîchit depuis l'API (kind "resources") si dispo ; sinon garde le seed.
+  useEffect(() => {
+    let cancelled = false;
+    fetchContent<Download[]>('resources', seed).then((list) => {
+      if (!cancelled && Array.isArray(list) && list.length > 0) setItems(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [seed]);
+
   const featured = items.find((d) => d.featured);
   const rest = items.filter((d) => !d.featured);
   const cats = ['Tous', ...Array.from(new Set(rest.map((d) => d.cat)))];
-  const [cat, setCat] = useState('Tous');
   const shown = cat === 'Tous' ? rest : rest.filter((d) => d.cat === cat);
 
   return (
