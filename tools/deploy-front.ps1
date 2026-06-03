@@ -1,49 +1,83 @@
 # tools/deploy-front.ps1
-# Déploie le site (mystya.fr) : build local (avec tes vraies données) puis upload FTP.
-# Lancement : double-clic sur deploy-front.bat, ou :
-#   .\tools\deploy-front.ps1 -RemoteDir "/web"
+# Deploie le site : build local (avec tes vraies donnees) puis upload FTP.
+# Lancement : double-clic sur deploy-front.bat, ou : .\tools\deploy-front.ps1
 #
-# ⚠️ Règle RemoteDir sur le dossier où est servi mystya.fr (visible dans FileZilla).
+# Config de deploiement : voir tools\deploy.local.ps1 (gitignore).
+# Priorite : defaults neutres < deploy.local.ps1 < arguments explicites.
+#   ex. override ponctuel : .\tools\deploy-front.ps1 -RemoteDir "/web"
 
 param(
-  [string]$FtpHost   = "ou2fa0.ftp.infomaniak.com",
-  [string]$FtpUser   = "ou2fa0_mystya",
-  [string]$RemoteDir = "/sites/mystya.fr",                   # dossier servi par mystya.fr (FTP)
-  [string]$ExportDir = "C:\Stream\streamerbot-xp-system\exports",
-  [switch]$NoTls                                             # par défaut FTPS explicite ; -NoTls = FTP simple
+  [string]$FtpHost,
+  [string]$FtpUser,
+  [string]$RemoteDir,
+  [string]$SiteUrl,
+  [string]$ApiUrl,
+  [string]$ExportDir,
+  [switch]$NoTls            # par defaut FTPS explicite ; -NoTls = FTP simple
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $web  = Join-Path $root "website"
 
+# --- Resolution de la config (defaults neutres < deploy.local.ps1 < arguments) ---
+$cfg = @{
+  FtpHost   = 'ftp.exemple.fr'
+  FtpUser   = 'user_exemple'
+  RemoteDir = '/sites/exemple.fr'
+  SiteUrl   = 'https://exemple.fr'
+  ApiUrl    = 'https://api.exemple.fr'
+  ExportDir = (Join-Path $root 'exports')
+}
+$localCfg = Join-Path $PSScriptRoot 'deploy.local.ps1'
+if (Test-Path $localCfg) {
+  . $localCfg
+  if ($DeployConfig) { foreach ($k in $DeployConfig.Keys) { if ($cfg.ContainsKey($k)) { $cfg[$k] = $DeployConfig[$k] } } }
+} else {
+  Write-Warning "tools\deploy.local.ps1 absent -> valeurs d'exemple."
+  Write-Warning "Copie deploy.local.ps1.example en deploy.local.ps1 et renseigne tes valeurs."
+}
+# Arguments explicites prioritaires
+if ($FtpHost)   { $cfg.FtpHost   = $FtpHost }
+if ($FtpUser)   { $cfg.FtpUser   = $FtpUser }
+if ($RemoteDir) { $cfg.RemoteDir = $RemoteDir }
+if ($SiteUrl)   { $cfg.SiteUrl   = $SiteUrl }
+if ($ApiUrl)    { $cfg.ApiUrl    = $ApiUrl }
+if ($ExportDir) { $cfg.ExportDir = $ExportDir }
+
 # 1) Build du site avec les domaines de prod + tes exports locaux
 Write-Host "== 1/3  Build du site ==" -ForegroundColor Cyan
 Push-Location $web
-$env:NEXT_PUBLIC_SITE_URL = "https://mystya.fr"
-$env:NEXT_PUBLIC_API_URL  = "https://api.mystya.fr"
-$env:EXPORT_DIR           = $ExportDir
+# Install des dependances si absentes (premiere install / 'next' introuvable)
+if (-not (Test-Path (Join-Path $web "node_modules\.bin\next*"))) {
+  Write-Host "  node_modules absent -> npm install ..." -ForegroundColor Yellow
+  npm install
+  if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "npm install echoue."; exit 1 }
+}
+$env:NEXT_PUBLIC_SITE_URL = $cfg.SiteUrl
+$env:NEXT_PUBLIC_API_URL  = $cfg.ApiUrl
+$env:EXPORT_DIR           = $cfg.ExportDir
 npm run build
 if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Build echoue."; exit 1 }
 Pop-Location
 
 # 2) Mot de passe FTP (saisie masquee, jamais stocke)
-$sec = Read-Host "Mot de passe FTP pour $FtpUser" -AsSecureString
+$sec = Read-Host ("Mot de passe FTP pour " + $cfg.FtpUser) -AsSecureString
 $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
-$pwd  = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-$userArg = "${FtpUser}:${pwd}"
+$ftpPwd = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+$userArg = "$($cfg.FtpUser):${ftpPwd}"
 
 # 3) Upload recursif de out/ (curl cree les dossiers distants au besoin)
 $outDir = Join-Path $web "out"
 $base   = (Resolve-Path $outDir).Path
 $files  = Get-ChildItem $outDir -Recurse -File
-$rd     = $RemoteDir.Trim('/')
+$rd     = $cfg.RemoteDir.Trim('/')
 
-Write-Host ("== 2/3  Upload de {0} fichiers vers {1}/{2} ==" -f $files.Count, $FtpHost, $rd) -ForegroundColor Cyan
+Write-Host ("== 2/3  Upload de {0} fichiers vers {1}/{2} ==" -f $files.Count, $cfg.FtpHost, $rd) -ForegroundColor Cyan
 $i = 0; $fail = 0
 foreach ($f in $files) {
   $rel    = $f.FullName.Substring($base.Length + 1) -replace '\\', '/'
-  $remote = "ftp://$FtpHost/" + ((@($rd, $rel) | Where-Object { $_ }) -join '/')
+  $remote = "ftp://$($cfg.FtpHost)/" + ((@($rd, $rel) | Where-Object { $_ }) -join '/')
 
   # Tableau d'arguments explicite (evite tout souci de parsing)
   $cargs = [System.Collections.Generic.List[string]]::new()

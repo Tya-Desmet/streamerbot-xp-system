@@ -9,6 +9,8 @@ ai/
 .env
 .env.*
 !.env.example
+tools/deploy.local.ps1
+!tools/deploy.local.ps1.example
 
 # ── Exports et backups ──
 exports/

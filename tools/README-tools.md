@@ -54,19 +54,28 @@ Sans `-ConfigPath` : prend `C:\Stream\streamerbot-xp-system\configs\config.json`
 existe, sinon le `config.json` relatif au script. Le dossier d'export = `export.path`
 du config, ou `<install>\exports`.
 
+### deploy.local.ps1 (config de déploiement, gitignorée)
+
+Domaines + identifiants FTP + dépôt backend. **Pas dans le dépôt** : copier le modèle
+et renseigner ses valeurs.
+  Copy-Item tools\deploy.local.ps1.example tools\deploy.local.ps1
+
+Priorité de résolution : defaults neutres < `deploy.local.ps1` < arguments explicites.
+
 ### deploy-front.ps1
 
-Build du site (avec tes exports locaux + domaines de prod) puis upload FTP vers
-Infomaniak. Demande le mot de passe FTP (jamais stocké). Réessaie chaque fichier
+`npm install` si besoin, build du site (exports locaux + domaines de `deploy.local.ps1`)
+puis upload FTP. Demande le mot de passe FTP (jamais stocké). Réessaie chaque fichier
 3 fois (réseau instable).
 
 Usage :
   .\tools\deploy-front.ps1
-  .\tools\deploy-front.ps1 -RemoteDir "/sites/mondomaine.fr"
+  .\tools\deploy-front.ps1 -RemoteDir "/sites/mondomaine.fr"   <- override ponctuel
 
 ### deploy-back.ps1
 
-Resync du dépôt backend dédié (code `backend/`) pour redéploiement Infomaniak.
+Resync du dépôt backend dédié (code `backend/`) pour redéploiement.
+Remote/branche lus depuis `deploy.local.ps1` (`BackendRemote` / `BackendBranch`).
 
 → Mise en ligne complète : [../docs/DEPLOY.md](../docs/DEPLOY.md)
 
