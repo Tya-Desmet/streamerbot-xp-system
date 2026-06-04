@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 // ============================================================
-// ACTION : EXPORT_Snapshot (V3.8)
+// ACTION : EXPORT_Snapshot (V3)
 // ============================================================
-// RÔLE : Exporte les données XP en fichiers JSON ET pousse un
-//         snapshot complet vers le backend via POST /api/push.
-//         Filtre les bots avant export. N'écrit aucun XP.
+// RÔLE : Lecture seule. Exporte les données du système XP vers
+//         des fichiers JSON (contrat V3) consommés par le hub web.
+//         Filtre les bots avant export. N'écrit aucun profil.
 //
 // INSTALLATION DANS STREAMER.BOT :
 //   1. Actions → Add Action → nommer "EXPORT_Snapshot"
@@ -776,7 +776,8 @@ public class PublicProfile
     public string title       { get; set; }
     public int    messages    { get; set; }
     public int    watchTime   { get; set; }
-    public int    watchStreak { get; set; }
+    public int    watchStreak { get; set; }     // conservé (export inchangé), plus affiché côté site
+    public int    totalCheckIns { get; set; }   // total cumulé de check-in (lifetime)
     public PublicSources sources { get; set; }
 }
 
@@ -843,6 +844,7 @@ public class ExportService
             messages    = u.Messages,
             watchTime   = u.WatchTime,
             watchStreak = u.WatchStreak,
+            totalCheckIns = u.TotalCheckIns,
             sources     = new PublicSources
             {
                 chat    = u.XpFromChat,
@@ -994,14 +996,15 @@ public class CPHInline
             }
         }
 
-        // 8. Payload push (si pushEnabled)
-        // Le POST est fait par la tache planifiee Windows : tools/push-to-backend.ps1
+        // 8. Écriture du payload push (si pushEnabled)
+        // Le POST HTTP est délégué à tools/push-to-backend.ps1 (sub-action PowerShell dans SB).
+        // C# ne peut pas faire de HTTP sans assembly System.Net — PowerShell s'en charge.
         if (config.Export.PushEnabled == true)
         {
-            var payload     = new { meta = metaObj, leaderboard = lbObj, users = allProfiles };
+            var payload = new { meta = metaObj, leaderboard = lbObj, users = allProfiles };
             var payloadPath = Path.Combine(exportDir, "push_payload.json");
             exp.WriteJson(payloadPath, payload);
-            CPH.LogInfo("[EXPORT_Snapshot] push_payload.json pret.");
+            CPH.LogInfo("[EXPORT_Snapshot] push_payload.json écrit → " + payloadPath);
         }
 
         // 9. Exposer le résultat

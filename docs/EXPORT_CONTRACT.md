@@ -114,7 +114,8 @@ Un fichier par viewer non-bot. **Champs d'affichage uniquement.**
 | `title` | string | titre du niveau |
 | `messages` | int | messages validés |
 | `watchTime` | int | minutes cumulées |
-| `watchStreak` | int | cycles watchtime consécutifs |
+| `watchStreak` | int | cycles watchtime consécutifs (conservé, non affiché) |
+| `totalCheckIns` | int | total cumulé de check-in (lifetime) |
 | `sources.chat` | int | XP issu du chat |
 | `sources.watch` | int | XP issu du watchtime |
 | `sources.rewards` | int | XP issu des rewards (channel points) |
@@ -133,6 +134,7 @@ Un fichier par viewer non-bot. **Champs d'affichage uniquement.**
   "messages": 4,
   "watchTime": 0,
   "watchStreak": 0,
+  "totalCheckIns": 0,
   "sources": { "chat": 0, "watch": 0, "rewards": 140 }
 }
 ```
@@ -150,7 +152,7 @@ Ces champs internes ne quittent jamais le bot :
 ```
 LastMessageTimestamp · LastWatchTimestamp · BonusExpiryTimestamp
 ActiveBonusMultiplier (valeur brute) · CheckInCount · LastCheckInDay
-TotalCheckIns · chemins disque
+chemins disque
 ```
 
 ---
@@ -170,3 +172,4 @@ TotalCheckIns · chemins disque
 | schemaVersion | date | changements |
 |---|---|---|
 | 1 | 2026-06 | Version initiale : `meta` + `leaderboard` + `users`. Mode fichier. |
+| 1 | 2026-06 | V3.9 — ajout **additif** `users.totalCheckIns` (total cumulé check-in). `schemaVersion` inchangé ; `watchStreak` conservé mais plus affiché côté site. |

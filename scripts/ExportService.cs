@@ -43,7 +43,8 @@ public class PublicProfile
     public string title       { get; set; }
     public int    messages    { get; set; }
     public int    watchTime   { get; set; }
-    public int    watchStreak { get; set; }
+    public int    watchStreak { get; set; }     // conservé (export inchangé), plus affiché côté site
+    public int    totalCheckIns { get; set; }   // total cumulé de check-in (lifetime)
     public PublicSources sources { get; set; }
 }
 
@@ -110,6 +111,7 @@ public class ExportService
             messages    = u.Messages,
             watchTime   = u.WatchTime,
             watchStreak = u.WatchStreak,
+            totalCheckIns = u.TotalCheckIns,
             sources     = new PublicSources
             {
                 chat    = u.XpFromChat,
