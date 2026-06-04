@@ -298,6 +298,14 @@ Copy-Item tools\deploy.local.ps1.example tools\deploy.local.ps1
 Le site lit alors le backend : le **classement** (polling 45 s) et les **profils viewer**
 se mettent à jour sans rebuild, à chaque push.
 
+### 8f. Identité, sections optionnelles & leaderboard intégrable
+
+- **Identité du site** (nom, SEO, thème) et **sections affichées** (planning, ressources,
+  copains, réseaux) se règlent dans `website/content/site.json` → voir
+  [CONFIGURATION.md § hub web](CONFIGURATION.md) et [TEMPLATE.md](TEMPLATE.md).
+- **Leaderboard intégrable** sur un site externe (iframe `/embed/leaderboard`) :
+  voir [EMBED.md](EMBED.md).
+
 ---
 
 ## Dépannage rapide

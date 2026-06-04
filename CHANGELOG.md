@@ -6,6 +6,55 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 
 ---
 
+## [3.10.0] — 2026-06-04
+
+### Ajouté
+- **Sections optionnelles (feature flags)** dans `website/content/site.json` →
+  `features` : `planning`, `ressources`, `friends`, `socials`. Flag absent = activé
+  (défaut, non-régression). Le cœur (classement + profils viewer) reste toujours présent.
+- Pages désactivées → `notFound()` + lien retiré de la NavBar ; sections d'accueil non rendues.
+- **Podium de l'accueil en live** (`LivePodium`) : polling `/api/leaderboard` comme la
+  page classement et l'embed (avant : figé au build).
+- **Page 404 personnalisée** (`NotFoundView` + `app/not-found.tsx`) thémée et navigable.
+- `docs/TEMPLATE.md` — guide de réutilisation du hub comme template.
+
+### Modifié
+- `lib/content.ts` — type `SiteFeatures` + helper `isFeatureOn()`.
+
+---
+
+## [3.9.0] — 2026-06-04
+
+### Ajouté
+- **Carte viewer : total de check-in** — champ public additif `totalCheckIns`
+  (`schemaVersion` inchangé) ; la « série watchtime » n'est plus affichée (`watchStreak`
+  conservé dans l'export).
+- **Identité & SEO pilotés par config** — `content/site.json` étendu (`siteName`,
+  `tagline`, `description`, `keywords`, `alternateNames`, `ogImage`). Plus aucun
+  « Mystya » en dur dans le code (fallback neutre). Non-régression vérifiée (diff de build vide).
+- **Leaderboard intégrable (iframe)** — route SSG `/embed/leaderboard`, classement seul
+  (sans lien profil), polling live + fallback, paramétrable `theme/limit/bg/accent/title`.
+  Doc `docs/EMBED.md`.
+
+### Modifié
+- **Route groups** : hub déplacé sous `app/(hub)/`, embed isolé sous `app/(embed)/`
+  (layout racine minimal, sans NavBar/Footer/JSON-LD). URLs inchangées.
+- Contrat d'export + `ExportService` + `EXPORT_Snapshot` régénéré (totalCheckIns).
+
+---
+
+## [3.8.0] — 2026-06
+
+### Ajouté
+- **Pipeline push live** : `EXPORT_Snapshot` → `push-to-backend.ps1` (tâche horaire) →
+  backend Node `/api/push` → site (classement + profils viewer à jour sans rebuild).
+- Configuration de déploiement externalisée (`tools/deploy.local.ps1`, gitignoré).
+
+> Versions V3.0–3.7 : mise en place du hub web (export fichier, site Next.js statique,
+> classement + profils + planning + ressources). Voir `README.md` pour l'état des versions.
+
+---
+
 ## [2.6.0] — 2026-06-02
 
 ### Ajouté

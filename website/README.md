@@ -1,24 +1,35 @@
-# Stream Hub — site web (V3 / V3.5)
+# Stream Hub — site web (V3.x)
 
 Hub communautaire **statique** (Next.js 16 + React 19, export statique) au style
 **Tokyo Neon / Sakura**. Il affiche le leaderboard, les profils viewers, le planning
-et les ressources à télécharger.
+et les ressources, et fournit un **leaderboard intégrable** (`/embed/leaderboard`).
 
-> **Lecture seule.** Aucun backend, aucune base de données, aucun compte utilisateur.
-> Le bot Streamer.bot reste la seule source de vérité (cf. `ai/website.md`).
+> **Lecture seule.** Le bot Streamer.bot reste la seule source de vérité. Le site lit
+> les JSON exportés au build, et — si un **backend live** est configuré
+> (`NEXT_PUBLIC_API_URL`) — rafraîchit classement et profils via polling (sans rebuild).
+> Aucune base de données, aucun compte utilisateur.
+
+> **Template distribuable** : l'identité (nom, SEO, branding) et les sections affichées
+> sont pilotées par `content/site.json` — aucun branding en dur. Voir
+> [docs/TEMPLATE.md](../docs/TEMPLATE.md).
 
 ---
 
 ## Pages
 
-| Route | Contenu | Source |
-|---|---|---|
-| `/` | Accueil : hero, copains en live, socials, Top 3 | `content/*` + données bot |
-| `/leaderboard` | Classement (podium + liste, recherche, « Trouve-toi ») | données bot |
-| `/viewer/[username]` | Profil viewer | données bot |
-| `/planning` | Programme de la semaine + countdown | `content/schedule.json` |
-| `/downloads` | Catalogue de ressources | `content/downloads.json` |
-| `/admin` | **Éditeur local (dev uniquement)** — exclu du build prod | — |
+| Route | Contenu | Source | Optionnelle |
+|---|---|---|---|
+| `/` | Accueil : hero, copains, socials, podium **live** | `content/*` + données bot | — (cœur) |
+| `/leaderboard` | Classement (podium + liste, recherche, « Trouve-toi »), **live** | données bot | — (cœur) |
+| `/viewer/[username]` | Profil viewer | données bot | — (cœur) |
+| `/embed/leaderboard` | Leaderboard **intégrable** (iframe), classement seul | données bot | — |
+| `/planning` | Programme de la semaine + countdown | `content/schedule.json` | `features.planning` |
+| `/ressources` | Catalogue de ressources | `content/downloads.json` | `features.ressources` |
+| `/admin` | **Éditeur local (dev uniquement)** | — | — |
+
+Les routes sont organisées en **route groups** : `app/(hub)/` (site complet, avec
+NavBar/Footer) et `app/(embed)/` (layout racine minimal, isolé). Une 404 personnalisée
+(`app/not-found.tsx`) couvre les URLs inconnues et les pages désactivées.
 
 ---
 
@@ -52,10 +63,20 @@ disparaît aussi du site (pas de fichier fantôme).
 
 ---
 
+## Identité & sections (`content/site.json`)
+
+Source unique de l'identité du site et des sections affichées :
+- **Identité / SEO** : `siteName`, `tagline`, `description`, `keywords`, `alternateNames`,
+  `ogImage`, `theme`, `twitchChannel`. (Les URLs canoniques/OG viennent de
+  `NEXT_PUBLIC_SITE_URL`, pas de ce fichier.)
+- **Sections optionnelles** : `features` = `{ planning, ressources, friends, socials }`.
+  Flag absent = activé. Mettre `false` masque la section/lien (cœur classement + profils
+  toujours présent). Détails : [docs/TEMPLATE.md](../docs/TEMPLATE.md).
+
 ## Contenu éditorial
 
 Fichiers versionnés dans `content/` (indépendants du bot) :
-`socials.json`, `friends.json`, `schedule.json`, `downloads.json`.
+`site.json`, `socials.json`, `friends.json`, `schedule.json`, `downloads.json`.
 
 Deux façons de les éditer :
 1. **À la main** dans les fichiers JSON.
@@ -99,9 +120,12 @@ Déployer `out/` une fois, puis envoyer seulement `exports/*.json` vers le dossi
 `/data/` de l'hébergeur (FTP/VPS ou bucket S3/R2). Le leaderboard se rafraîchit via
 son polling (45 s) sans rebuild ; les profils se mettent à jour au prochain build.
 
-### Option 3 — Temps réel
-Backend optionnel (lot **P10** de la V3, différé) : le bot POST ses données à une API
-que le site consomme. Hors du périmètre statique.
+### Option 3 — Temps réel (implémenté, V3.8)
+Backend Node optionnel : `EXPORT_Snapshot` → `tools/push-to-backend.ps1` (tâche
+planifiée) → `POST /api/push` → le site lit `/api/leaderboard` et `/api/users/:id` via
+polling (45 s) quand `NEXT_PUBLIC_API_URL` est défini au build. Classement + profils +
+podium d'accueil + embed se rafraîchissent sans rebuild. Voir
+[docs/DEPLOY.md](../docs/DEPLOY.md) et `backend/README.md`.
 
 ---
 
