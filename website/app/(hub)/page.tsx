@@ -1,10 +1,10 @@
 import { getMeta, getLeaderboard } from '@/lib/data';
-import { getFriends, getSocials, getSite } from '@/lib/content';
+import { getFriends, getSocials, getSite, isFeatureOn } from '@/lib/content';
 import Hero from '@/components/Hero';
 import FriendsLive from '@/components/FriendsLive';
 import LivePreview from '@/components/LivePreview';
 import SocialCard, { SOCIAL_META, type Platform } from '@/components/SocialCard';
-import Podium from '@/components/Podium';
+import LivePodium from '@/components/LivePodium';
 import Reveal from '@/components/Reveal';
 import { buildMetadata, siteName } from '@/lib/seo';
 
@@ -42,7 +42,7 @@ export default function Home() {
         </div>
       ) : null}
 
-      {friends.length > 0 && (
+      {isFeatureOn('friends') && friends.length > 0 && (
         <section className="section">
           <div className="wrap">
             <Reveal>
@@ -75,13 +75,13 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal>
-              <Podium players={top3} />
+              <LivePodium seed={lb} />
             </Reveal>
           </div>
         </section>
       )}
 
-      {platforms.length > 0 && (
+      {isFeatureOn('socials') && platforms.length > 0 && (
         <section className="section">
           <div className="wrap">
             <Reveal>

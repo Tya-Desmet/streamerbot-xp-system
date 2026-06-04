@@ -4,7 +4,7 @@ import '../globals.css';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import JsonLd from '@/components/JsonLd';
-import { getSocials, getSite } from '@/lib/content';
+import { getSocials, getSite, isFeatureOn } from '@/lib/content';
 import { getMeta } from '@/lib/data';
 import { SITE_URL, siteName, tagline, ogImage } from '@/lib/seo';
 
@@ -83,7 +83,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" data-theme={site.theme || 'shibuya'} className={`${display.variable} ${body.variable}`}>
       <body>
         <JsonLd data={ld} />
-        <NavBar twitchUrl={socials.twitch ?? '#'} twitchChannel={site.twitchChannel} siteName={name} />
+        <NavBar
+          twitchUrl={socials.twitch ?? '#'}
+          twitchChannel={site.twitchChannel}
+          siteName={name}
+          features={{ planning: isFeatureOn('planning'), ressources: isFeatureOn('ressources') }}
+        />
         {children}
         <Footer socials={socials} siteName={name} />
       </body>

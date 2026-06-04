@@ -1,4 +1,5 @@
-import { getSchedule } from '@/lib/content';
+import { notFound } from 'next/navigation';
+import { getSchedule, isFeatureOn } from '@/lib/content';
 import PlanningView from '@/components/PlanningView';
 import Reveal from '@/components/Reveal';
 import { buildMetadata, siteName } from '@/lib/seo';
@@ -13,6 +14,7 @@ export const metadata = buildMetadata({
 });
 
 export default function PlanningPage() {
+  if (!isFeatureOn('planning')) notFound();
   const schedule = getSchedule();
 
   return (

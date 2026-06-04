@@ -34,6 +34,14 @@ export type Friend = {
   channel?: string; // login Twitch (pour la détection live decapi) — dérivé de url si absent
 };
 
+// Sections optionnelles du hub (template) — flag absent = activé (défaut true).
+export type SiteFeatures = {
+  planning?: boolean;
+  ressources?: boolean;
+  friends?: boolean;
+  socials?: boolean;
+};
+
 export type Site = {
   theme: string;
   twitchChannel: string;
@@ -43,6 +51,7 @@ export type Site = {
   keywords?: string[];
   alternateNames?: string[];
   ogImage?: string;
+  features?: SiteFeatures;
 };
 
 export type ScheduleDay = {
@@ -90,4 +99,9 @@ export function getDownloads(): Download[] {
 }
 export function getSite(): Site {
   return read<Site>('site.json', { theme: 'shibuya', twitchChannel: '' });
+}
+
+// Un flag absent vaut true (défaut tout activé → non-régression pour une install existante).
+export function isFeatureOn(key: keyof SiteFeatures): boolean {
+  return getSite().features?.[key] !== false;
 }
