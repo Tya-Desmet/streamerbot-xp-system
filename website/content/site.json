@@ -1,4 +1,11 @@
 {
   "theme": "shibuya",
-  "twitchChannel": "mystya"
+  "twitchChannel": "",
+  "siteName": "Stream Hub",
+  "tagline": "Créateur de contenu Twitch",
+  "description": "Hub communautaire : classement XP, planning des lives et ressources à télécharger.",
+  "keywords": ["stream", "classement XP", "communauté Twitch"],
+  "alternateNames": [],
+  "ogImage": "/og.jpg",
+  "features": { "planning": true, "ressources": true, "friends": true, "socials": true }
 }

@@ -257,3 +257,32 @@ var projectPath = Path.GetDirectoryName(configDir ?? "");
 | Double XP Channel Point | `actions/REWARD_BonusXp.cs` | `RewardService.cs` |
 | Boss system | `actions/BOSS_Spawn.cs` | `BossService.cs` |
 | Achievements | `actions/ACHIEVEMENT_Check.cs` | `AchievementService.cs` |
+
+---
+
+## Hub web — architecture front (V3.x)
+
+Site Next.js 16 en **export statique** (`output: 'export'`, App Router, TS strict).
+
+```
+website/app/
+├── (hub)/          route group : site complet (layout racine avec NavBar/Footer/JSON-LD)
+│   ├── layout.tsx  identité + SEO depuis content/site.json (P03)
+│   ├── page.tsx    accueil (Hero, LivePodium live, sections optionnelles)
+│   ├── leaderboard/ planning/ ressources/ privacy/ admin/ viewer/[username]/
+│   └── not-found.tsx (non utilisé : Next route vers la 404 globale)
+├── (embed)/        route group : layout racine MINIMAL (sans chrome)
+│   └── embed/leaderboard/page.tsx  classement seul, polling, paramétrable
+├── not-found.tsx   404 globale autonome (<html> propre) → out/404.html
+├── manifest.ts · sitemap.ts · robots.ts · icon.svg · globals.css
+```
+
+- **Données** : build-time via `lib/data.ts` (lit `public/data/*.json`, copiés des
+  `exports/` par `scripts/copy-exports.mjs`). En live, les composants client
+  (`Leaderboard`, `LivePodium`, `EmbedLeaderboard`) pollent `leaderboardUrl()` →
+  `/api/leaderboard` si `NEXT_PUBLIC_API_URL`, sinon le JSON statique.
+- **Identité & sections** : `content/site.json` via `lib/content.ts`
+  (`getSite`, `isFeatureOn`). Aucun branding en dur. Cf. `EXPORT_CONTRACT.md`,
+  `CONFIGURATION.md`, `EMBED.md`, `TEMPLATE.md`.
+- **Deux layouts racine** (route groups) : permettent à l'embed d'être servi sans le
+  chrome du hub. URLs inchangées par les groups.

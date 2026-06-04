@@ -1,16 +1,20 @@
-import { getSchedule } from '@/lib/content';
+import { notFound } from 'next/navigation';
+import { getSchedule, isFeatureOn } from '@/lib/content';
 import PlanningView from '@/components/PlanningView';
 import Reveal from '@/components/Reveal';
-import { buildMetadata } from '@/lib/seo';
+import { buildMetadata, siteName } from '@/lib/seo';
+
+const s = siteName();
 
 export const metadata = buildMetadata({
   title: 'Planning des streams',
-  description: 'Programme des lives de Mystya — horaires, jeux de la semaine et compte à rebours du prochain stream.',
+  description: `Programme des lives de ${s} — horaires, jeux de la semaine et compte à rebours du prochain stream.`,
   path: '/planning/',
-  keywords: ['planning stream Mystya', 'prochain live Mystya', 'horaires stream Mystya'],
+  keywords: [`planning stream ${s}`, `prochain live ${s}`, `horaires stream ${s}`],
 });
 
 export default function PlanningPage() {
+  if (!isFeatureOn('planning')) notFound();
   const schedule = getSchedule();
 
   return (

@@ -20,7 +20,7 @@ export default function StatGrid({ profile }: { profile: PublicProfile }) {
         <Stat label="XP total" value={nf.format(profile.xp)} />
         <Stat label="Messages" value={nf.format(profile.messages)} />
         <Stat label="Watchtime" value={formatWatchTime(profile.watchTime)} />
-        <Stat label="Série watchtime" value={`${profile.watchStreak} cycles`} />
+        <Stat label="Check-in" value={`${profile.totalCheckIns ?? 0}`} />
       </div>
 
       <div>

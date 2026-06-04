@@ -2,13 +2,15 @@ import { getLeaderboard, getMeta } from '@/lib/data';
 import Leaderboard from '@/components/Leaderboard';
 import Reveal from '@/components/Reveal';
 import JsonLd from '@/components/JsonLd';
-import { buildMetadata, SITE_URL } from '@/lib/seo';
+import { buildMetadata, SITE_URL, siteName } from '@/lib/seo';
+
+const s = siteName();
 
 export const metadata = buildMetadata({
   title: 'Classement XP',
-  description: 'Classement XP de la communauté Mystya : podium, niveaux, watchtime et profils viewers.',
+  description: `Classement XP de la communauté ${s} : podium, niveaux, watchtime et profils viewers.`,
   path: '/leaderboard/',
-  keywords: ['classement XP Mystya', 'viewers Mystya', 'niveau stream Mystya'],
+  keywords: [`classement XP ${s}`, `viewers ${s}`, `niveau stream ${s}`],
 });
 
 export default function LeaderboardPage() {

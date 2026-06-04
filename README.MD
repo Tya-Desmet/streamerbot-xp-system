@@ -22,7 +22,12 @@ Système de progression XP pour streamers Twitch — intégration Streamer.bot +
 | Configuration centralisée (un seul `config.json`) | ✅ V2 |
 | Export web (`EXPORT_Snapshot` → JSON meta/leaderboard/profils) | ✅ V3 |
 | Hub web public : classement + profils viewer + planning | ✅ V3 |
-| Leaderboard & profils **live** (push bot → backend → site) | ✅ V3 |
+| Leaderboard & profils **live** (push bot → backend → site) | ✅ V3.8 |
+| Carte viewer : total de check-in (`totalCheckIns`) | ✅ V3.9 |
+| Identité & SEO du site pilotés par config (`content/site.json`) | ✅ V3.9 |
+| **Leaderboard intégrable** (iframe `/embed/leaderboard`) | ✅ V3.9 |
+| Sections optionnelles par config (planning, ressources, copains, réseaux) | ✅ V3.10 |
+| Podium de l'accueil **live** + page 404 personnalisée | ✅ V3.10 |
 
 ---
 
@@ -77,6 +82,9 @@ streamerbot-xp-system/
 │
 │   # ── Hub web (V3) ──
 ├── website/              # Site public Next.js (export statique)
+│   ├── app/(hub)/        #   site complet (accueil, classement, planning, ressources, profils)
+│   ├── app/(embed)/      #   leaderboard intégrable isolé (/embed/leaderboard)
+│   └── content/site.json #   identité du site + sections optionnelles (features)
 ├── backend/              # API Node/Express (leaderboard + profils live)
 ├── tools/                # Scripts : build-actions, push-to-backend, deploy-*
 └── exports/              # JSON générés par EXPORT_Snapshot (gitignorés)
@@ -93,6 +101,8 @@ streamerbot-xp-system/
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Flux de données, services, UserProfile |
 | [DEPLOY.md](docs/DEPLOY.md) | Mise en ligne du site + backend (Infomaniak) |
 | [EXPORT_CONTRACT.md](docs/EXPORT_CONTRACT.md) | Schéma des exports JSON (bot ⇄ hub web) |
+| [EMBED.md](docs/EMBED.md) | Leaderboard intégrable en iframe (`/embed/leaderboard`) + options |
+| [TEMPLATE.md](docs/TEMPLATE.md) | Réutiliser le hub comme template (autre streamer) : identité + sections optionnelles |
 | [THEMES.md](docs/THEMES.md) | Changer et créer des thèmes |
 | [TITLES.md](docs/TITLES.md) | Configurer les titres par niveau |
 | [BOT_EXCLUSION.md](docs/BOT_EXCLUSION.md) | Gérer la liste des bots exclus |
@@ -108,7 +118,9 @@ streamerbot-xp-system/
 | V1 | ✅ Fonctionnelle | XP chat, levels, leaderboard, profile card, 6 thèmes |
 | V2 | ✅ Implémentée | Watchtime hybride, !rank, titres, bot exclusion, config centralisée |
 | V3 | ✅ Implémentée | Hub web public : export, push live, classement + profils viewer, planning |
-| V4 | 🔲 Planifiée | Boss system, récompenses, saisons, achievements |
+| V3.9 | ✅ Implémentée | Carte check-in, identité/SEO par config, leaderboard intégrable (iframe) |
+| V3.10 | ✅ Implémentée | Template distribuable : sections optionnelles par config, podium live, 404 custom |
+| V4 | 🔲 Planifiée | Boss system, récompenses, saisons, achievements (+ SaaS multi-locataire : « V2 » du projet) |
 
 ---
 

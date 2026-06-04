@@ -240,3 +240,50 @@ Logs ajoutés en mode verbose :
 - Skip cooldown `!rank` — `RANK_ShowCommand`
 
 Laisser `false` en production pour réduire le bruit dans les logs SB.
+
+---
+
+## Configuration du hub web — `website/content/site.json`
+
+Indépendant du `config.json` du bot. Pilote l'**identité du site** et les **sections
+affichées**. C'est le fichier qu'un autre streamer édite pour son propre hub
+(cf. [TEMPLATE.md](TEMPLATE.md)).
+
+```json
+{
+  "theme": "shibuya",
+  "twitchChannel": "ton_pseudo_twitch",
+  "siteName": "TonNom",
+  "tagline": "Streameur·euse Twitch",
+  "description": "Phrase de présentation (SEO / partages).",
+  "keywords": ["TonNom", "ta thématique"],
+  "alternateNames": [],
+  "ogImage": "/og.jpg",
+  "features": { "planning": true, "ressources": true, "friends": true, "socials": true }
+}
+```
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `theme` | string | `"shibuya"` | Thème du site : `shibuya`, `akiba`, `hara`. |
+| `twitchChannel` | string | `""` | Login Twitch (détection live + section live de l'accueil). |
+| `siteName` | string | `"Stream Hub"` | Nom de marque (titres, footer, manifest, OpenGraph). |
+| `tagline` | string | `""` | Sous-titre (titre par défaut = `siteName — tagline`). |
+| `description` | string | `""` | Méta-description SEO. |
+| `keywords` | string[] | `[]` | Mots-clés SEO globaux. |
+| `alternateNames` | string[] | `[]` | Alias (JSON-LD `Person.alternateName`). |
+| `ogImage` | string | `"/og.jpg"` | Image OpenGraph/Twitter (dans `public/`). |
+| `features.planning` | bool | `true` | Affiche le lien + la page `/planning` (sinon 404). |
+| `features.ressources` | bool | `true` | Affiche le lien + la page `/ressources` (sinon 404). |
+| `features.friends` | bool | `true` | Affiche la section « Copains en live » de l'accueil. |
+| `features.socials` | bool | `true` | Affiche la section « Rejoins-moi » de l'accueil (le footer garde les liens). |
+
+> **Flag absent = activé.** Un `site.json` sans bloc `features` = toutes les sections
+> activées. Le **cœur** (classement + profils viewer + podium) n'est jamais désactivable.
+
+> Les **URLs** canoniques/sitemap/OpenGraph viennent de `NEXT_PUBLIC_SITE_URL` (variable
+> d'environnement de build), **pas** de `site.json`.
+
+Autres fichiers `content/` (éditoriaux) : `socials.json`, `friends.json`,
+`schedule.json`, `downloads.json`. Le leaderboard intégrable est documenté dans
+[EMBED.md](EMBED.md).

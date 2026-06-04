@@ -1,4 +1,5 @@
-import { getDownloads } from '@/lib/content';
+import { notFound } from 'next/navigation';
+import { getDownloads, isFeatureOn } from '@/lib/content';
 import DownloadsBrowser from '@/components/DownloadsBrowser';
 import Reveal from '@/components/Reveal';
 import { buildMetadata } from '@/lib/seo';
@@ -10,6 +11,7 @@ export const metadata = buildMetadata({
 });
 
 export default function RessourcesPage() {
+  if (!isFeatureOn('ressources')) notFound();
   const items = getDownloads();
 
   return (

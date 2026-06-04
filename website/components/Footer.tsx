@@ -2,7 +2,7 @@ import type { Socials } from '@/lib/content';
 import { SOCIAL_META, SOCIAL_ICON, type Platform } from './SocialCard';
 
 // Footer : brand + petits boutons sociaux (icône seule) + mentions.
-export default function Footer({ socials }: { socials: Socials }) {
+export default function Footer({ socials, siteName }: { socials: Socials; siteName: string }) {
   const platforms = (Object.keys(SOCIAL_META) as Platform[]).filter((p) => socials[p]);
   const year = new Date().getFullYear();
 
@@ -10,9 +10,9 @@ export default function Footer({ socials }: { socials: Socials }) {
     <footer className="footer">
       <div className="wrap">
         <div className="brand">
-          <div className="logo">M</div>
+          <div className="logo">{siteName.charAt(0).toUpperCase()}</div>
           <div className="name">
-            MYSTYA<small>STREAMLEVELS</small>
+            {siteName.toUpperCase()}<small>STREAMLEVELS</small>
           </div>
         </div>
 
@@ -34,7 +34,7 @@ export default function Footer({ socials }: { socials: Socials }) {
         </div>
 
         <div className="fine">
-          <span>© {year} Mystya · StreamLevels</span>
+          <span>© {year} {siteName} · StreamLevels</span>
           <span className="flex center gap-m" style={{ flexWrap: 'wrap' }}>
             <a href="/privacy/" style={{ textDecoration: 'underline' }}>Confidentialité</a>
             <span>Propulsé par Streamer.bot XP System</span>

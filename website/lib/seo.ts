@@ -1,8 +1,20 @@
 import type { Metadata } from 'next';
+import { getSite } from '@/lib/content';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-export const SITE_NAME = 'Mystya';
-const DEFAULT_OG = '/og.jpg';
+
+// Identité de marque — pilotée par content/site.json (jamais en dur ici).
+const FALLBACK_NAME = 'Stream Hub';
+
+export function siteName(): string {
+  return getSite().siteName || FALLBACK_NAME;
+}
+export function tagline(): string {
+  return getSite().tagline || '';
+}
+export function ogImage(): string {
+  return getSite().ogImage || '/og.jpg';
+}
 
 export function buildMetadata(opts: {
   title?: string;
@@ -11,9 +23,10 @@ export function buildMetadata(opts: {
   image?: string;
   keywords?: string[];
 }): Metadata {
+  const name = siteName();
   const url = new URL(opts.path || '/', SITE_URL).toString();
-  const image = opts.image || DEFAULT_OG;
-  const fullTitle = opts.title ? `${opts.title} · Mystya` : undefined;
+  const image = opts.image || ogImage();
+  const fullTitle = opts.title ? `${opts.title} · ${name}` : undefined;
 
   return {
     title: fullTitle,
@@ -24,7 +37,7 @@ export function buildMetadata(opts: {
       title: fullTitle,
       description: opts.description,
       url,
-      siteName: SITE_NAME,
+      siteName: name,
       type: 'website',
       locale: 'fr_FR',
       images: [{ url: image, width: 1200, height: 630 }],

@@ -37,5 +37,6 @@ export interface PublicProfile {
   messages: number;
   watchTime: number;
   watchStreak: number;
+  totalCheckIns: number;
   sources: { chat: number; watch: number; rewards: number };
 }
