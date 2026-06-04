@@ -57,7 +57,31 @@ Exemple **minimal** (juste le système XP, sans contenu éditorial) :
 - `content/friends.json` — copains en live.
 - `content/socials.json` — tes réseaux (footer + section accueil).
 
-## 5. Build & déploiement
+## 5. Garder tes valeurs hors du dépôt — override `.local` (optionnel)
+
+Le dépôt committe des `content/*.json` **neutres**. Si tu maintiens un fork public (ou
+veux éviter de committer ton contenu), crée un **`X.local.json`** à côté : il est
+**gitignoré** et **remplace complètement** le fichier committé au build.
+
+```
+content/site.json         ← neutre, committé (template)
+content/site.local.json   ← TES valeurs, gitignoré (override complet)
+```
+Vaut pour `site`, `socials`, `friends`, `schedule`, `downloads`. Un exemple est fourni :
+`content/site.local.json.example`. (Si tu n'as pas besoin de cette séparation, édite
+simplement les `content/*.json` directement.)
+
+**Image OpenGraph** : `public/og.jpg` est **gitignoré** — dépose **ta** propre image
+1200×630 à cet emplacement (référencée par `site.json` → `ogImage`).
+
+## 6. ⚠️ Domaine backend dans la CSP
+
+`website/public/.htaccess` et `website/public/_headers` contiennent une
+`Content-Security-Policy` avec un `connect-src` pointant un domaine backend. **Remplace
+ce domaine par le tien** (`https://api.ton-domaine`) — sinon le navigateur bloquera les
+appels à ton API (`/api/leaderboard`, profils, live). Ces fichiers sont déployés tels quels.
+
+## 7. Build & déploiement
 ```bash
 cd website
 npx tsc --noEmit && npm run build   # génère out/ (export statique)

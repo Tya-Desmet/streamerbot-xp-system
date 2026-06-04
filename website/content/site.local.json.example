@@ -1,0 +1,12 @@
+{
+  "_comment": "Copie ce fichier en 'site.local.json' (gitignoré) pour surcharger l'identité SANS committer tes vraies valeurs. Override COMPLET : ce fichier remplace site.json s'il existe. Même principe pour socials/friends/schedule/downloads (.local.json).",
+  "theme": "hara",
+  "twitchChannel": "ton_pseudo_twitch",
+  "siteName": "Ton Nom",
+  "tagline": "Streameur·euse Twitch",
+  "description": "Ta phrase de présentation (SEO / partages réseaux).",
+  "keywords": ["ton nom", "ta thématique", "communauté"],
+  "alternateNames": ["alias1", "alias2"],
+  "ogImage": "/og.jpg",
+  "features": { "planning": true, "ressources": true, "friends": true, "socials": true }
+}

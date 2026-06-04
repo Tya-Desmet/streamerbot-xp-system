@@ -1,11 +1,11 @@
 {
   "theme": "shibuya",
-  "twitchChannel": "mystya",
-  "siteName": "Mystya",
-  "tagline": "Streameuse Twitch",
-  "description": "Mystya est une streameuse Twitch francophone. Rejoins la communauté : classement XP, planning des lives, ressources.",
-  "keywords": ["Mystya", "mystya", "MystyaTV", "streameuse Twitch", "stream Valorant", "stream Minecraft", "hub communautaire"],
-  "alternateNames": ["mystya", "MystyaTV", "Mystya TV"],
+  "twitchChannel": "",
+  "siteName": "Stream Hub",
+  "tagline": "Créateur de contenu Twitch",
+  "description": "Hub communautaire : classement XP, planning des lives et ressources à télécharger.",
+  "keywords": ["stream", "classement XP", "communauté Twitch"],
+  "alternateNames": [],
   "ogImage": "/og.jpg",
   "features": { "planning": true, "ressources": true, "friends": true, "socials": true }
 }

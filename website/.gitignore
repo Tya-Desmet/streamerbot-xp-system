@@ -11,6 +11,13 @@ next-env.d.ts
 /public/data/*
 !/public/data/.gitkeep
 
+# Contenu perso (override local) — NON distribué avec le template.
+# Le dépôt committe des content/*.json neutres ; tes vraies valeurs vivent ici.
+/content/*.local.json
+
+# Image OpenGraph perso — chaque streamer fournit la sienne (pointée par site.json ogImage)
+/public/og.jpg
+
 # Divers
 .DS_Store
 *.log

@@ -5,14 +5,20 @@ import path from 'path';
 
 const DIR = path.join(process.cwd(), 'content');
 
+// Override local prioritaire : "site.json" → "site.local.json" (gitignoré, non distribué).
+// Si le .local existe, il REMPLACE le fichier committé (override complet, pas de fusion).
+// Permet de garder un template neutre committé + ses vraies valeurs hors du dépôt.
 function read<T>(file: string, fallback: T): T {
-  try {
-    const p = path.join(DIR, file);
-    if (!fs.existsSync(p)) return fallback;
-    return JSON.parse(fs.readFileSync(p, 'utf8')) as T;
-  } catch {
-    return fallback;
+  const local = file.replace(/\.json$/, '.local.json');
+  for (const name of [local, file]) {
+    try {
+      const p = path.join(DIR, name);
+      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8')) as T;
+    } catch {
+      /* fichier illisible → on tente le suivant */
+    }
   }
+  return fallback;
 }
 
 export type Socials = {
