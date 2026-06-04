@@ -42,7 +42,7 @@ export default function ThemeEditor({ seed }: { seed: Site }) {
       <div className="card" style={{ padding: '16px 18px', display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <label className="flex" style={{ flexDirection: 'column', gap: 4, fontSize: 12 }}>
           <span className="muted">Chaîne Twitch (login)</span>
-          <input style={inp} value={site.twitchChannel} onChange={(e) => update({ ...site, twitchChannel: e.target.value })} placeholder="mystya" />
+          <input style={inp} value={site.twitchChannel} onChange={(e) => update({ ...site, twitchChannel: e.target.value })} placeholder="ton_pseudo_twitch" />
         </label>
         <div>
           <span className="muted" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>

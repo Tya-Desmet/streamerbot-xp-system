@@ -1,4 +1,10 @@
 {
   "theme": "shibuya",
-  "twitchChannel": "mystya"
+  "twitchChannel": "mystya",
+  "siteName": "Mystya",
+  "tagline": "Streameuse Twitch",
+  "description": "Mystya est une streameuse Twitch francophone. Rejoins la communauté : classement XP, planning des lives, ressources.",
+  "keywords": ["Mystya", "mystya", "MystyaTV", "streameuse Twitch", "stream Valorant", "stream Minecraft", "hub communautaire"],
+  "alternateNames": ["mystya", "MystyaTV", "Mystya TV"],
+  "ogImage": "/og.jpg"
 }

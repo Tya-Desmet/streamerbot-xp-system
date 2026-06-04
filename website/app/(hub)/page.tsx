@@ -6,15 +6,18 @@ import LivePreview from '@/components/LivePreview';
 import SocialCard, { SOCIAL_META, type Platform } from '@/components/SocialCard';
 import Podium from '@/components/Podium';
 import Reveal from '@/components/Reveal';
-import { buildMetadata } from '@/lib/seo';
+import { buildMetadata, siteName } from '@/lib/seo';
+
+const s = siteName();
+const sl = s.toLowerCase();
 
 export const metadata = buildMetadata({
-  // Pas de `title` → hérite du default layout "Mystya — Streameuse Twitch" (la page la mieux placée pour le mot-clé "mystya").
+  // Pas de `title` → hérite du default layout "<nom> — <tagline>" (la page la mieux placée pour le mot-clé du nom).
   description:
-    'Mystya est une streameuse Twitch francophone. Retrouve le classement XP de la communauté, le planning des lives, les copains en live et toutes les ressources.',
+    `${s} est une streameuse Twitch francophone. Retrouve le classement XP de la communauté, le planning des lives, les copains en live et toutes les ressources.`,
   path: '/',
   keywords: [
-    'Mystya', 'mystya twitch', 'mystya streameuse', 'mystya live',
+    s, `${sl} twitch`, `${sl} streameuse`, `${sl} live`,
     'classement XP stream', 'hub communauté stream',
   ],
 });

@@ -34,7 +34,16 @@ export type Friend = {
   channel?: string; // login Twitch (pour la détection live decapi) — dérivé de url si absent
 };
 
-export type Site = { theme: string; twitchChannel: string };
+export type Site = {
+  theme: string;
+  twitchChannel: string;
+  siteName?: string;
+  tagline?: string;
+  description?: string;
+  keywords?: string[];
+  alternateNames?: string[];
+  ogImage?: string;
+};
 
 export type ScheduleDay = {
   day: string;

@@ -21,7 +21,7 @@ const ICON_BURGER = (
   </svg>
 );
 
-export default function NavBar({ twitchUrl, twitchChannel }: { twitchUrl: string; twitchChannel: string }) {
+export default function NavBar({ twitchUrl, twitchChannel, siteName }: { twitchUrl: string; twitchChannel: string; siteName: string }) {
   const pathname = usePathname() || '/';
   const cur = norm(pathname);
   const [open, setOpen] = useState(false);
@@ -30,9 +30,9 @@ export default function NavBar({ twitchUrl, twitchChannel }: { twitchUrl: string
     <header className="nav">
       <div className="wrap">
         <a className="brand" href="/">
-          <div className="logo">M</div>
+          <div className="logo">{siteName.charAt(0).toUpperCase()}</div>
           <div className="name">
-            MYSTYA<small>STREAMLEVELS</small>
+            {siteName.toUpperCase()}<small>STREAMLEVELS</small>
           </div>
         </a>
 

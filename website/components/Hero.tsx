@@ -1,7 +1,7 @@
 import Sakura from './Sakura';
 
 export default function Hero({ streamerName, twitchUrl }: { streamerName: string; twitchUrl: string }) {
-  const name = streamerName || 'Mystya';
+  const name = streamerName || 'Stream';
 
   return (
     <section className="hero" style={{ position: 'relative', overflow: 'hidden', padding: '90px 0 70px' }}>
